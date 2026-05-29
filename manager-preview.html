@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Preview — Giao diện Tổ trưởng</title>
+<style>
+:root {
+  --bg:#0a0a0a; --bg-card:#111; --bg-hover:#181818; --border:#1f1f1f; --border-hi:#2a2a2a;
+  --text:#e5e5e5; --text-sub:#888; --text-muted:#444;
+  --green:#22c55e; --green-dim:rgba(34,197,94,0.08); --green-ring:rgba(34,197,94,0.22);
+  --red:#ef4444;   --red-dim:rgba(239,68,68,0.08);   --red-ring:rgba(239,68,68,0.22);
+  --yellow:#eab308; --yellow-dim:rgba(234,179,8,0.08); --yellow-ring:rgba(234,179,8,0.22);
+  --blue:#3b82f6;
+  --font:'Segoe UI',system-ui,sans-serif; --mono:'SF Mono','Fira Code',monospace;
+  --r:10px; --r-sm:7px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;}
+*{ scrollbar-width:none; }
+*::-webkit-scrollbar{ display:none; }
+
+/* ── Header ── */
+.header{
+  position:sticky;top:0;z-index:100;
+  background:rgba(10,10,10,0.92);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  padding:0.85rem 1rem;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.header-brand{ display:flex;flex-direction:column;gap:1px; }
+.brand-label{ font-size:0.72rem;font-weight:700;letter-spacing:0.08em;color:var(--green); }
+.brand-title{ font-size:0.88rem;font-weight:600;color:var(--text); }
+.clock{ font-size:0.82rem;font-weight:700;color:var(--text-sub);font-family:var(--mono); }
+
+/* ── Main ── */
+.main{ padding:1rem 1rem 6rem; }
+
+/* ── Team chips ── */
+.team-bar{
+  display:flex;gap:0.5rem;overflow-x:auto;padding:0.1rem 0 0.75rem;
+}
+.t-chip{
+  flex-shrink:0;padding:0.42rem 1rem;border-radius:999px;font-size:0.82rem;font-weight:600;
+  border:1px solid var(--border-hi);background:var(--bg-card);color:var(--text-sub);cursor:pointer;
+}
+.t-chip.active{ background:var(--green-dim);border-color:var(--green-ring);color:var(--green); }
+
+/* ── Date row ── */
+.date-row{ display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem; }
+.date-label{ font-size:0.78rem;color:var(--text-sub); }
+input[type=date]{
+  background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-sm);
+  color:var(--text);font-family:var(--font);font-size:0.85rem;padding:0.45rem 0.75rem;
+  outline:none;color-scheme:dark;
+}
+
+/* ── Stats ── */
+.stats{ display:grid;grid-template-columns:repeat(3,1fr);gap:0.6rem;margin-bottom:1.1rem; }
+.stat{
+  background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r);
+  padding:0.75rem 0.85rem;
+}
+.stat-l{ font-size:0.58rem;text-transform:uppercase;letter-spacing:0.09em;color:var(--text-muted); }
+.stat-v{ font-size:1.25rem;font-weight:800;margin-top:3px; }
+.stat-sub{ font-size:0.62rem;color:var(--text-muted);margin-top:1px; }
+.g{ color:var(--green); } .r{ color:var(--red); } .y{ color:var(--yellow); }
+
+/* ── Section header ── */
+.sec{
+  display:flex;align-items:center;justify-content:space-between;
+  margin:1.2rem 0 0.6rem;
+}
+.sec-title{ font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted); }
+.sec-badge{
+  font-size:0.65rem;font-weight:700;padding:0.18rem 0.6rem;border-radius:999px;
+  background:var(--bg-card);border:1px solid var(--border);color:var(--text-sub);
+}
+
+/* ── Stage cards ── */
+.stage-list{ display:flex;flex-direction:column;gap:0.5rem; }
+
+.stage-card{
+  background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r);
+  padding:0.85rem 1rem;position:relative;overflow:hidden;
+}
+.stage-card.has-report{ border-color:var(--green-ring); }
+.stage-card.low-report{ border-color:var(--yellow-ring); }
+.stage-card.no-report{ opacity:0.5; }
+
+/* Progress bar background */
+.stage-card .bar-bg{
+  position:absolute;left:0;top:0;bottom:0;
+  background:var(--green-dim);border-radius:var(--r) 0 0 var(--r);
+  transition:width 0.6s cubic-bezier(0.16,1,0.3,1);
+}
+.stage-card.low-report .bar-bg{ background:var(--yellow-dim); }
+
+.stage-card-inner{ position:relative;z-index:1; }
+.stage-top{ display:flex;align-items:flex-start;justify-content:space-between;gap:0.5rem; }
+.stage-name{ font-size:0.88rem;font-weight:600;color:var(--text);line-height:1.35; }
+.stage-qty{ font-size:1.05rem;font-weight:800;font-family:var(--mono);white-space:nowrap; }
+.stage-card.has-report .stage-qty{ color:var(--green); }
+.stage-card.low-report .stage-qty{ color:var(--yellow); }
+
+.stage-workers{ display:flex;flex-wrap:wrap;gap:0.35rem;margin-top:0.5rem; }
+.worker-pill{
+  font-size:0.68rem;background:rgba(255,255,255,0.04);border:1px solid var(--border-hi);
+  border-radius:4px;padding:0.12rem 0.45rem;color:var(--text-sub);
+}
+.stage-no-label{ font-size:0.72rem;color:var(--text-muted);margin-top:0.3rem;font-style:italic; }
+
+/* ── Table (chi tiết) ── */
+.tbl-wrap{
+  background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r);
+  overflow-x:auto;
+}
+.tbl{ width:100%;border-collapse:collapse;font-size:0.88rem; }
+.tbl th{
+  background:var(--bg);padding:0.6rem 0.9rem;text-align:left;
+  font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;
+  color:var(--text-muted);border-bottom:1px solid var(--border);white-space:nowrap;
+}
+.tbl td{
+  padding:0.75rem 0.9rem;border-bottom:1px solid var(--border);
+  color:var(--text);vertical-align:middle;
+}
+.tbl tr:last-child td{ border-bottom:none; }
+.tbl tbody tr:hover td{ background:var(--bg-hover); }
+.td-num{ color:var(--text-muted);font-size:0.72rem;width:32px; }
+.td-qty{ font-family:var(--mono);font-weight:700;color:var(--green);text-align:right; }
+.td-time{ color:var(--text-muted);font-size:0.74rem;white-space:nowrap; }
+.chip{
+  display:inline-block;background:var(--green-dim);border:1px solid var(--green-ring);
+  border-radius:4px;padding:0.08rem 0.45rem;font-size:0.72rem;color:var(--green);
+}
+
+/* ── Bottom nav ── */
+.bnav{
+  position:fixed;bottom:0;left:0;right:0;
+  background:rgba(10,10,10,0.95);backdrop-filter:blur(12px);
+  border-top:1px solid var(--border);
+  display:flex;
+}
+.nav-btn{
+  flex:1;padding:0.75rem 0.5rem 0.85rem;background:none;border:none;
+  color:var(--text-muted);font-family:var(--font);font-size:0.68rem;font-weight:600;
+  cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;
+  transition:color 0.15s;
+}
+.nav-btn svg{ width:20px;height:20px;stroke-width:1.7; }
+.nav-btn.active{ color:var(--green); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-brand">
+    <span class="brand-label">YoungStory</span>
+    <span class="brand-title">Quản lý sản xuất</span>
+  </div>
+  <div class="clock">14:32:07</div>
+</div>
+
+<div class="main">
+
+  <!-- Team filter -->
+  <div class="team-bar">
+    <div class="t-chip active">Tất cả</div>
+    <div class="t-chip">Tổ 1</div>
+    <div class="t-chip">Tổ 2</div>
+    <div class="t-chip">Tổ 3</div>
+    <div class="t-chip">QC</div>
+    <div class="t-chip">Đóng gói</div>
+  </div>
+
+  <!-- Date -->
+  <div class="date-row">
+    <div class="date-label">Hôm nay, 10/05/2026</div>
+    <input type="date" value="2026-05-10">
+  </div>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-l">Tổng sản lượng</div>
+      <div class="stat-v g">8.240</div>
+      <div class="stat-sub">+12% hôm qua</div>
+    </div>
+    <div class="stat">
+      <div class="stat-l">Công đoạn đã báo</div>
+      <div class="stat-v">18<span style="font-size:0.75rem;color:var(--text-muted);font-weight:400"> /34</span></div>
+      <div class="stat-sub">16 chưa có báo cáo</div>
+    </div>
+    <div class="stat">
+      <div class="stat-l">Công nhân</div>
+      <div class="stat-v">12</div>
+      <div class="stat-sub">đã gửi báo cáo</div>
+    </div>
+  </div>
+
+  <!-- Stage view: not reported -->
+  <div class="sec">
+    <span class="sec-title" style="color:var(--red)">Chưa có báo cáo hôm nay</span>
+    <span class="sec-badge" style="color:var(--red);border-color:var(--red-ring);background:var(--red-dim)">16 công đoạn</span>
+  </div>
+  <div class="stage-list" id="missing-list"></div>
+
+  <!-- Detail table -->
+  <div class="sec">
+    <span class="sec-title">Chi tiết từng báo cáo</span>
+    <span class="sec-badge">24 bản ghi</span>
+  </div>
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>#</th><th>Họ tên</th><th>Tổ</th><th>Công đoạn</th><th style="text-align:right">SL</th><th>Giờ</th>
+        </tr>
+      </thead>
+      <tbody id="detail-table"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- Bottom nav -->
+<nav class="bnav">
+  <button class="nav-btn active">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+    </svg>
+    Hôm nay
+  </button>
+  <button class="nav-btn">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    Lịch sử
+  </button>
+  <button class="nav-btn">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+    </svg>
+    Biểu đồ
+  </button>
+</nav>
+
+<script>
+const MAX_QTY = 850;
+
+const reported = [
+  { stage:'Cắt nhám lông, nhám gai đầu cạp', qty:820, workers:['Nguyễn Thị Lan','Trần Văn Hùng'], team:'Tổ 1' },
+  { stage:'Cắt nhám cạp sau x2',             qty:780, workers:['Lê Thị Mai'],                  team:'Tổ 1' },
+  { stage:'Chắp đũng sau, nc',               qty:740, workers:['Phạm Văn Đức','Hoàng Thị Thu'], team:'Tổ 1' },
+  { stage:'Diễu đũng sau, nc',               qty:720, workers:['Nguyễn Văn An'],               team:'Tổ 1' },
+  { stage:'Quây cá x4, nc',                  qty:690, workers:['Trần Thị Hoa','Lê Văn Nam'],   team:'Tổ 1' },
+  { stage:'VS 3c đáp đầu cổ',                qty:670, workers:['Đinh Thị Liên'],               team:'Tổ 2' },
+  { stage:'Chắp mũ trên',                    qty:650, workers:['Bùi Văn Tân','Võ Thị Kim'],    team:'Tổ 2' },
+  { stage:'Viền mũ trên',                    qty:640, workers:['Ngô Thị Bình'],                team:'Tổ 2' },
+  { stage:'LT nhám vai',                     qty:610, workers:['Phạm Thị Nga'],                team:'Tổ 3' },
+  { stage:'Bọ can gối x2',                   qty:590, workers:['Trương Văn Long'],             team:'Tổ 3' },
+  { stage:'Mí đáp túi trong x2, nc',         qty:410, workers:['Lê Thị Mai'],                  team:'Tổ 1' },
+  { stage:'Chiết ly túi to x2, nc',          qty:390, workers:['Nguyễn Thị Lan'],              team:'Tổ 1' },
+  { stage:'Xỏ khóa túi tay x2',             qty:370, workers:['Phạm Văn Đức'],               team:'Tổ 2' },
+  { stage:'Ghim lót túi tay',               qty:350, workers:['Hoàng Thị Thu'],              team:'Tổ 2' },
+  { stage:'Thùa nắp túi to x2',             qty:320, workers:['Đinh Thị Liên'],              team:'Tổ 3' },
+  { stage:'Bọ đũng sau',                    qty:300, workers:['Bùi Văn Tân'],                team:'Tổ 3' },
+  { stage:'Diễu can đũng trước, nc',        qty:260, workers:['Võ Thị Kim'],                 team:'Tổ 1' },
+  { stage:'Tra khóa moi, nc',               qty:210, workers:['Ngô Thị Bình'],               team:'Tổ 1' },
+];
+
+const missing = [
+  { stage:'Cắt nhám nắp túi mông x2',   team:'Tổ 1', order:3  },
+  { stage:'Cắt nhám cá x4',             team:'Tổ 1', order:7  },
+  { stage:'Cắt dây gấu x2',             team:'Tổ 1', order:9  },
+  { stage:'Gim cá vào ống quần x4, nc', team:'Tổ 1', order:31 },
+  { stage:'Diễu cầu mông, nc',          team:'Tổ 1', order:28 },
+  { stage:'Chắp mũ dưới',              team:'Tổ 2', order:20 },
+  { stage:'Mí đỉnh dưới',              team:'Tổ 2', order:22 },
+  { stage:'Viền mũ dưới',              team:'Tổ 2', order:24 },
+  { stage:'Diễu ốp mũ 2k',            team:'Tổ 2', order:26 },
+  { stage:'Tra cổ mũ + đặt dây dệt',  team:'Tổ 2', order:72 },
+  { stage:'LT nhám gối',               team:'Tổ 3', order:7  },
+  { stage:'LT nhám cá tay',            team:'Tổ 3', order:14 },
+  { stage:'Bọ nắp túi to x2',          team:'Tổ 3', order:34 },
+  { stage:'Bọ tròn túi to x2',         team:'Tổ 3', order:36 },
+  { stage:'May gấu',                   team:'Tổ 2', order:90 },
+  { stage:'Xỏ ốp cá vai x2',          team:'Tổ 2', order:95 },
+];
+
+const details = [
+  { name:'Nguyễn Thị Lan', team:'Tổ 1', stage:'Cắt nhám lông, nhám gai đầu cạp', qty:820, time:'07:42' },
+  { name:'Trần Văn Hùng',  team:'Tổ 1', stage:'Cắt nhám lông, nhám gai đầu cạp', qty:780, time:'07:58' },
+  { name:'Lê Thị Mai',     team:'Tổ 1', stage:'Cắt nhám cạp sau x2',             qty:780, time:'08:10' },
+  { name:'Phạm Văn Đức',   team:'Tổ 1', stage:'Chắp đũng sau, nc',               qty:760, time:'08:22' },
+  { name:'Hoàng Thị Thu',  team:'Tổ 1', stage:'Chắp đũng sau, nc',               qty:720, time:'08:35' },
+  { name:'Nguyễn Văn An',  team:'Tổ 1', stage:'Diễu đũng sau, nc',               qty:720, time:'08:41' },
+  { name:'Trần Thị Hoa',   team:'Tổ 1', stage:'Quây cá x4, nc',                  qty:700, time:'09:05' },
+  { name:'Lê Văn Nam',     team:'Tổ 1', stage:'Quây cá x4, nc',                  qty:680, time:'09:12' },
+  { name:'Đinh Thị Liên',  team:'Tổ 2', stage:'VS 3c đáp đầu cổ',                qty:670, time:'09:18' },
+  { name:'Bùi Văn Tân',    team:'Tổ 2', stage:'Chắp mũ trên',                    qty:660, time:'09:25' },
+  { name:'Võ Thị Kim',     team:'Tổ 2', stage:'Chắp mũ trên',                    qty:640, time:'09:30' },
+  { name:'Ngô Thị Bình',   team:'Tổ 2', stage:'Viền mũ trên',                    qty:640, time:'09:38' },
+  { name:'Phạm Thị Nga',   team:'Tổ 3', stage:'LT nhám vai',                     qty:610, time:'09:42' },
+  { name:'Trương Văn Long', team:'Tổ 3', stage:'Bọ can gối x2',                  qty:590, time:'09:50' },
+  { name:'Lê Thị Mai',     team:'Tổ 1', stage:'Mí đáp túi trong x2, nc',         qty:410, time:'10:15' },
+  { name:'Nguyễn Thị Lan', team:'Tổ 1', stage:'Chiết ly túi to x2, nc',          qty:390, time:'10:22' },
+  { name:'Phạm Văn Đức',   team:'Tổ 2', stage:'Xỏ khóa túi tay x2',             qty:370, time:'10:30' },
+  { name:'Hoàng Thị Thu',  team:'Tổ 2', stage:'Ghim lót túi tay',               qty:350, time:'10:38' },
+  { name:'Đinh Thị Liên',  team:'Tổ 3', stage:'Thùa nắp túi to x2',             qty:320, time:'10:45' },
+  { name:'Bùi Văn Tân',    team:'Tổ 3', stage:'Bọ đũng sau',                    qty:300, time:'10:52' },
+  { name:'Võ Thị Kim',     team:'Tổ 1', stage:'Diễu can đũng trước, nc',        qty:260, time:'11:08' },
+  { name:'Ngô Thị Bình',   team:'Tổ 1', stage:'Tra khóa moi, nc',               qty:210, time:'11:20' },
+  { name:'Phạm Thị Nga',   team:'Tổ 2', stage:'Dán ốp tay x2',                 qty:190, time:'11:35' },
+  { name:'Trương Văn Long', team:'Tổ 3', stage:'May nhám đai x4, nc',           qty:160, time:'11:50' },
+];
+
+
+// Group missing by team, sort by order within team
+const misList = document.getElementById('missing-list');
+const teamOrder = ['Tổ 1','Tổ 2','Tổ 3','QC','Đóng gói'];
+const grouped = {};
+missing.forEach(m => {
+  if (!grouped[m.team]) grouped[m.team] = [];
+  grouped[m.team].push(m);
+});
+teamOrder.forEach(team => {
+  if (!grouped[team]) return;
+  const group = grouped[team].sort((a,b) => a.order - b.order);
+
+  const header = document.createElement('div');
+  header.style.cssText = 'font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.09em;color:var(--red);opacity:0.7;margin:0.75rem 0 0.4rem;padding-left:2px;';
+  header.textContent = team + ' — ' + group.length + ' công đoạn';
+  misList.appendChild(header);
+
+  group.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'stage-card no-report';
+    card.style.cssText += 'border-color:var(--red-ring);opacity:1;background:var(--red-dim);';
+    card.innerHTML = `
+      <div class="stage-card-inner">
+        <div class="stage-top">
+          <div class="stage-name" style="color:var(--text-sub)">${item.stage}</div>
+          <div style="font-size:0.65rem;color:var(--red);font-weight:700;white-space:nowrap">Chưa báo</div>
+        </div>
+      </div>`;
+    misList.appendChild(card);
+  });
+});
+
+// Render detail table
+const tbody = document.getElementById('detail-table');
+details.forEach((r, i) => {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td class="td-num">${i+1}</td>
+    <td>${r.name}</td>
+    <td><span class="chip">${r.team}</span></td>
+    <td style="font-size:0.82rem;color:var(--text-sub)">${r.stage}</td>
+    <td class="td-qty">${r.qty.toLocaleString('vi-VN')}</td>
+    <td class="td-time">${r.time}</td>`;
+  tbody.appendChild(tr);
+});
+
+// Team chip filter (visual only)
+document.querySelectorAll('.t-chip').forEach(c => {
+  c.addEventListener('click', () => {
+    document.querySelectorAll('.t-chip').forEach(x => x.classList.remove('active'));
+    c.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>

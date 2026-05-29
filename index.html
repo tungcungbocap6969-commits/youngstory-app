@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0a0a0a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="YoungStory">
+  <meta name="description" content="Báo cáo sản lượng hàng ngày cho công nhân xưởng">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <title>YoungStory — Báo cáo sản lượng</title>
+
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/animations.css">
+  <link rel="stylesheet" href="css/splash.css">
+</head>
+<body>
+
+<!-- ═══════════════════ SPLASH ═══════════════════ -->
+<div id="splash">
+  <svg class="sp-ring-svg" viewBox="0 0 260 260" fill="none">
+    <circle cx="130" cy="130" r="110" stroke="#161616" stroke-width="1.5"/>
+    <circle id="sp-outer-ring" cx="130" cy="130" r="110"
+      stroke="#22c55e" stroke-width="2"
+      stroke-dasharray="10 6" stroke-linecap="round"/>
+    <circle id="sp-inner-ring" cx="130" cy="130" r="70"
+      stroke="#1c3a28" stroke-width="1.5"
+      stroke-dasharray="5 9" stroke-linecap="round"/>
+    <path id="sp-motion-path"
+      d="M 130 20 A 110 110 0 1 1 129.99 20.001"
+      stroke="none" fill="none"/>
+    <g id="sp-needle-group">
+      <animateMotion dur="2.8s" fill="freeze" calcMode="spline"
+        keyTimes="0;1" keySplines="0.16,1,0.3,1">
+        <mpath href="#sp-motion-path"/>
+      </animateMotion>
+      <rect x="-2" y="-18" width="4" height="22" rx="2" fill="#d8d8d8"/>
+      <circle cx="0" cy="5" r="2" fill="#22c55e"/>
+      <path d="M0,5 L-1,12 L0,11.5 L1,12 Z" fill="#22c55e"/>
+    </g>
+    <g id="sp-spool-g">
+      <ellipse cx="130" cy="124" rx="24" ry="11" fill="#181818" stroke="#282828" stroke-width="1.5"/>
+      <rect x="106" y="124" width="48" height="12" fill="#181818"/>
+      <ellipse cx="130" cy="136" rx="24" ry="11" fill="#181818" stroke="#282828" stroke-width="1.5"/>
+      <g id="sp-spool-lines">
+        <ellipse cx="130" cy="130" rx="19" ry="9" fill="none" stroke="#22c55e" stroke-width="1.2" opacity="0.55"/>
+        <line x1="111" y1="130" x2="149" y2="130" stroke="#22c55e" stroke-width="1.2" opacity="0.35"/>
+      </g>
+      <ellipse cx="130" cy="124" rx="24" ry="11" fill="none" stroke="#303030" stroke-width="1"/>
+    </g>
+  </svg>
+  <div class="sp-brand">
+    <div class="sp-brand-name">YoungStory</div>
+    <div class="sp-brand-sub">Bảng báo cáo sản xuất</div>
+    <div class="sp-version">v19</div>
+  </div>
+  <div class="sp-welcome">
+    <div class="sp-welcome-text" id="sp-welcome-text"></div>
+  </div>
+  <div class="sp-tap">Chạm để bắt đầu</div>
+</div>
+
+<!-- ═══════════════════ PIN SCREEN ═══════════════════ -->
+<div id="pin-screen">
+  <div class="pin-header">
+    <div class="header-brand">
+      <span class="brand-label">YoungStory</span>
+      <span class="brand-title">Bảng báo cáo sản xuất</span>
+    </div>
+    <div class="clock-widget">
+      <div class="clock-time" id="pin-clock">--:--:--</div>
+      <div class="clock-label">Moscow · MSK</div>
+    </div>
+  </div>
+
+  <!-- Chọn tài khoản -->
+  <div id="pin-picker">
+    <p class="pin-title">Chọn tài khoản</p>
+    <p class="pin-picker-subtitle" id="pin-picker-subtitle"></p>
+    <div class="pin-picker-grid" id="pin-picker-grid"></div>
+  </div>
+
+  <!-- Nhập PIN (sau khi chọn tài khoản) -->
+  <div id="pin-entry" class="hidden">
+    <button class="pin-back" id="pin-back-entry">← Quay lại</button>
+    <div class="pin-entry-avatar-wrap">
+      <div class="pin-entry-avatar" id="pin-entry-avatar">?</div>
+      <p class="pin-entry-name" id="pin-entry-name"></p>
+    </div>
+    <p class="pin-title">Nhập mã PIN</p>
+    <div class="pin-dots-wrap" id="pin-dots-entry">
+      <div class="pin-dot" id="pd-0"></div>
+      <div class="pin-dot" id="pd-1"></div>
+      <div class="pin-dot" id="pd-2"></div>
+      <div class="pin-dot" id="pd-3"></div>
+    </div>
+    <p class="pin-error" id="pin-error"></p>
+    <div class="pin-numpad" id="pin-numpad-entry"></div>
+  </div>
+
+  <!-- Đăng ký -->
+  <div id="pin-register" class="hidden">
+    <button class="pin-back" id="pin-back-btn">← Quay lại</button>
+    <p class="pin-title">Tạo tài khoản</p>
+    <div class="pin-reg-form">
+      <div class="pin-reg-field">
+        <label>Họ và tên</label>
+        <input type="text" id="reg-name" autocomplete="off" autocapitalize="words" placeholder="Nhập tên của bạn...">
+      </div>
+      <div class="pin-reg-field">
+        <label>Tổ sản xuất</label>
+        <div class="pin-team-chips" id="reg-teams"></div>
+      </div>
+    </div>
+    <input type="hidden" id="reg-team-val">
+    <p class="pin-field-label" id="reg-pin-label">Đặt mã PIN (4 số)</p>
+    <div class="pin-dots-wrap" id="pin-dots-reg">
+      <div class="pin-dot" id="rpd-0"></div>
+      <div class="pin-dot" id="rpd-1"></div>
+      <div class="pin-dot" id="rpd-2"></div>
+      <div class="pin-dot" id="rpd-3"></div>
+    </div>
+    <p class="pin-error" id="reg-error"></p>
+    <div class="pin-numpad" id="pin-numpad-reg"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════ HEADER ═══════════════════ -->
+<header class="header">
+  <div class="header-brand">
+    <span class="brand-label">YoungStory</span>
+    <span class="brand-title">Bảng báo cáo sản xuất</span>
+  </div>
+  <div class="clock-widget">
+    <div class="clock-time" id="msk-clock">--:--:--</div>
+    <div class="clock-label">Moscow · MSK</div>
+  </div>
+</header>
+
+<!-- ═══════════════════ UPDATE BANNER ═══════════════════ -->
+<div class="update-banner" id="update-banner">
+  <span class="upd-text">⬇ Có phiên bản mới!</span>
+  <button class="upd-btn" id="update-btn">Cập nhật ngay</button>
+</div>
+
+<!-- ═══════════════════ MAIN ═══════════════════ -->
+<main class="main">
+
+  <!-- Install banner -->
+  <div class="install-banner" id="install-banner">
+    <div class="install-text">
+      <strong>Cài đặt ứng dụng</strong>
+      <span>Thêm vào màn hình chính để dùng offline</span>
+    </div>
+    <button class="btn-install" id="install-btn">Cài đặt</button>
+  </div>
+
+  <!-- ─── TAB: BÁO CÁO ─── -->
+  <section id="tab-report">
+
+    <div class="status-banner waiting" id="status-banner">
+      <div class="status-dot"></div>
+      <div class="status-body">
+        <div class="s-title" id="s-title">Đang tải...</div>
+        <div class="s-detail" id="s-detail"></div>
+      </div>
+    </div>
+
+    <div class="stats-row hidden" id="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">Báo cáo hôm nay</div>
+        <div class="stat-value" id="stat-count">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Tổng sản lượng</div>
+        <div class="stat-value" id="stat-total">0</div>
+      </div>
+    </div>
+
+    <div class="form-card" id="form-card">
+      <div class="form-card-title">Nhập báo cáo ca hôm nay</div>
+
+      <div class="field">
+        <div class="field-label-row">
+          <label for="f-name">Họ và tên</label>
+          <button type="button" class="pin-switch-btn" id="pin-switch-user"
+                  style="display:none" onclick="location.reload()">Đổi người dùng</button>
+        </div>
+        <input type="text" id="f-name" placeholder="Ví dụ: Nguyễn Văn A"
+               autocomplete="name" autocapitalize="words" inputmode="text">
+      </div>
+
+      <div class="field">
+        <label>Tổ sản xuất</label>
+        <div class="team-chips" id="team-chips"></div>
+      </div>
+
+      <div class="field">
+        <label>Công đoạn</label>
+        <div class="dd-wrap">
+          <input type="text" id="f-process" class="dd-input dd-inline"
+                 placeholder="Tìm hoặc chọn công đoạn…"
+                 autocomplete="off" autocorrect="off" spellcheck="false">
+          <div class="dd-list" id="dd-main"></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="f-qty">Sản lượng (số lượng)</label>
+        <input type="number" id="f-qty" placeholder="0"
+               inputmode="numeric" min="1" max="99999">
+      </div>
+
+      <button class="btn-submit" id="btn-submit">Gửi báo cáo</button>
+      <p class="submit-error hidden" id="submit-error"></p>
+    </div>
+
+    <div class="sec-header">
+      <span class="sec-title">Báo cáo hôm nay</span>
+      <span class="sec-badge" id="today-badge">0 bản ghi</span>
+    </div>
+    <div class="cards" id="today-cards"></div>
+
+  </section>
+
+  <!-- ─── TAB: LỊCH SỬ ─── -->
+  <section id="tab-history" class="hidden">
+
+    <div class="date-wrap">
+      <label for="hist-date">Chọn ngày</label>
+      <input type="date" id="hist-date">
+    </div>
+
+    <div class="hist-stats hidden" id="hist-stats">
+      <div class="stat-card">
+        <div class="stat-label">Số báo cáo</div>
+        <div class="stat-value" id="hs-count">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Tổng sản lượng</div>
+        <div class="stat-value" id="hs-total">0</div>
+      </div>
+    </div>
+
+    <div class="sec-header">
+      <span class="sec-title" id="hist-sec-title">Lịch sử</span>
+      <span class="sec-badge" id="hist-badge">0 bản ghi</span>
+    </div>
+    <div class="cards" id="hist-cards"></div>
+
+  </section>
+
+</main>
+
+<!-- ═══════════════════ BOTTOM NAV ═══════════════════ -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" id="nav-report" onclick="switchTab('report')">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round"
+        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2
+           M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2
+           m-6 9l2 2 4-4"/>
+    </svg>
+    Báo cáo
+  </button>
+  <button class="nav-btn" id="nav-history" onclick="switchTab('history')">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round"
+        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    Lịch sử
+  </button>
+</nav>
+
+<!-- ═══════════════════ EDIT MODAL ═══════════════════ -->
+<div class="overlay" id="edit-overlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Chỉnh sửa báo cáo">
+    <div class="modal-title">Chỉnh sửa báo cáo</div>
+
+    <div class="field">
+      <label for="e-name">Họ và tên</label>
+      <input type="text" id="e-name" autocomplete="name">
+    </div>
+
+    <div class="field">
+      <label>Tổ sản xuất</label>
+      <div class="dd-wrap">
+        <input type="text" id="e-team" class="dd-input dd-inline"
+               placeholder="Chọn tổ…"
+               autocomplete="off" autocorrect="off" spellcheck="false">
+        <div class="dd-list" id="dd-edit-team"></div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Công đoạn</label>
+      <div id="e-chip-wrap"></div>
+      <div class="dd-wrap">
+        <input type="text" id="e-process" class="dd-input"
+               placeholder="Tìm hoặc chọn công đoạn…"
+               autocomplete="off" autocorrect="off" spellcheck="false">
+        <div class="dd-list" id="dd-edit"></div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="e-qty">Sản lượng</label>
+      <input type="number" id="e-qty" inputmode="numeric" min="1" max="99999">
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal()">Hủy</button>
+      <button class="btn-primary" onclick="saveEdit()">Lưu thay đổi</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ TOAST ═══════════════════ -->
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- ═══════════════════ SCRIPTS (thứ tự quan trọng) ═══════════════════ -->
+<script src="js/config.js"></script>
+<script src="js/db.js"></script>
+<script src="js/time.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/supabase.js"></script>
+<script src="js/dropdown.js"></script>
+<script src="js/clock.js"></script>
+<script src="js/cards.js"></script>
+<script src="js/form.js"></script>
+<script src="js/pin.js"></script>
+<script src="js/modal.js"></script>
+<script src="js/splash.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>

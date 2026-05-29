@@ -1,0 +1,106 @@
+/* ── A: Clock glow on second change ── */
+.clock-glow { animation: clock-flash 0.4s ease-out; }
+@keyframes clock-flash {
+  0%   { color: #22c55e; text-shadow: 0 0 12px rgba(34,197,94,0.8); }
+  100% { color: var(--text); text-shadow: none; }
+}
+
+/* ── B: Brand shimmer ── */
+.brand-label {
+  background: linear-gradient(90deg,
+    #fff 0%, #fff 35%,
+    rgba(255,255,255,0.55) 50%,
+    #fff 65%, #fff 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer-sweep 4s linear infinite;
+}
+@keyframes shimmer-sweep {
+  from { background-position: 200% center; }
+  to   { background-position: -200% center; }
+}
+
+/* ── C: Quantity input bounce ── */
+.qty-bounce { animation: qty-pop 0.18s cubic-bezier(0.34,1.56,0.64,1); }
+@keyframes qty-pop {
+  from { transform: scale(1.06); }
+  to   { transform: scale(1); }
+}
+
+/* ── D: Submit button ripple ── */
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.18);
+  transform: scale(0);
+  animation: ripple-spread 0.55s linear;
+  pointer-events: none;
+}
+@keyframes ripple-spread { to { transform: scale(4); opacity: 0; } }
+
+/* ── E: Confetti piece ── */
+.confetti-piece {
+  position: fixed;
+  width: 8px; height: 8px;
+  pointer-events: none;
+  z-index: 9999;
+  border-radius: 2px;
+  will-change: transform, opacity;
+}
+
+/* ── F: Card slide in ── */
+.rcard { animation: card-in 0.35s cubic-bezier(0.16,1,0.3,1) both; }
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── I: Toast slide up + bounce ── */
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(24px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+@keyframes toast-out {
+  from { opacity: 1; transform: translateX(-50%) translateY(0); }
+  to   { opacity: 0; transform: translateX(-50%) translateY(10px); }
+}
+
+/* ── J: Progress bar pulse colors ── (transitions handled inline via JS) */
+
+/* ── K: Tab switch fade-slide ── */
+.tab-enter { animation: tab-slide-in 0.28s cubic-bezier(0.16,1,0.3,1); }
+@keyframes tab-slide-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── L: Submit error shake ── */
+.btn-submit.shake { animation: submit-shake 0.4s cubic-bezier(0.36,0.07,0.19,0.97); }
+@keyframes submit-shake {
+  0%,100% { transform: translateX(0); }
+  15%     { transform: translateX(-7px); }
+  30%     { transform: translateX(7px); }
+  45%     { transform: translateX(-5px); }
+  60%     { transform: translateX(5px); }
+  75%     { transform: translateX(-3px); }
+  90%     { transform: translateX(3px); }
+}
+
+/* ── M: Error text drop in ── */
+@keyframes error-drop {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.submit-error:not(.hidden) { animation: error-drop 0.25s cubic-bezier(0.16,1,0.3,1); }
+
+/* ── Status dot pulses ── */
+@keyframes pulse-a {
+  0%,100% { box-shadow: 0 0 0 3px rgba(245,158,11,0.3); }
+  50%      { box-shadow: 0 0 0 7px rgba(245,158,11,0.08); }
+}
+@keyframes pulse-g {
+  0%,100% { box-shadow: 0 0 0 3px var(--green-ring); }
+  50%      { box-shadow: 0 0 0 7px rgba(34,197,94,0.06); }
+}

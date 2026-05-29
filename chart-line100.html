@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Preview — Đường 100 công đoạn</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg:#0a0a0a; --bg-card:#111; --border:#1f1f1f;
+    --text:#e5e5e5; --text-sub:#999; --text-muted:#555;
+    --green:#22c55e; --red:#ef4444; --yellow:#eab308;
+    --font:'Segoe UI',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:var(--font);padding:1.25rem 1rem 4rem;}
+  h1{font-size:1.05rem;font-weight:700;margin-bottom:0.2rem;}
+  .sub{font-size:0.75rem;color:var(--text-muted);margin-bottom:1.5rem;}
+  .card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1.1rem 1rem;}
+  .card-title{font-size:0.82rem;font-weight:600;color:var(--text-sub);margin-bottom:0.6rem;}
+
+  /* Scroll container cho biểu đồ rộng */
+  .chart-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:0.5rem;}
+  .chart-inner{position:relative;height:280px;min-width:900px;}
+
+  /* Stats row */
+  .stats{display:flex;gap:0.75rem;margin-bottom:1rem;flex-wrap:wrap;}
+  .stat{background:#0f0f0f;border:1px solid var(--border);border-radius:8px;
+        padding:0.5rem 0.9rem;flex:1;min-width:100px;}
+  .stat-l{font-size:0.6rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);}
+  .stat-v{font-size:1.1rem;font-weight:700;margin-top:2px;}
+  .green{color:var(--green);} .red{color:var(--red);} .yellow{color:var(--yellow);}
+
+  /* Legend */
+  .legend{display:flex;gap:1.2rem;margin-bottom:0.9rem;flex-wrap:wrap;}
+  .leg{display:flex;align-items:center;gap:0.4rem;font-size:0.7rem;color:var(--text-sub);}
+  .leg-dot{width:10px;height:10px;border-radius:50%;}
+  .leg-line{width:22px;height:2px;border-radius:1px;}
+
+  .note{font-size:0.68rem;color:var(--text-muted);font-style:italic;
+        margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--border);}
+
+  /* Tooltip tùy chỉnh */
+  #custom-tooltip{
+    position:fixed;pointer-events:none;z-index:999;
+    background:#1e1e1e;border:1px solid #2a2a2a;border-radius:7px;
+    padding:0.5rem 0.75rem;font-size:0.75rem;line-height:1.6;
+    display:none;max-width:200px;
+  }
+  #custom-tooltip .tt-stage{color:var(--text-muted);font-size:0.65rem;}
+  #custom-tooltip .tt-name{color:var(--text);font-weight:600;}
+  #custom-tooltip .tt-qty{font-weight:700;}
+  #custom-tooltip .tt-vs{font-size:0.68rem;}
+</style>
+</head>
+<body>
+
+<h1>Biểu đồ đường — 100 công đoạn</h1>
+<p class="sub">Dữ liệu giả · Cao = nhiều sản lượng · Thấp = tắc nghẽn · Dưới đường đỏ = cần chú ý</p>
+
+<div class="card">
+  <div class="card-title">Sản lượng theo công đoạn — hôm nay</div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="legend">
+    <div class="leg"><div class="leg-dot" style="background:var(--green)"></div>Tốt (≥ TB)</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--red)"></div>Tắc (dưới 70% TB)</div>
+    <div class="leg"><div class="leg-line" style="background:var(--red);opacity:0.5;border-top:2px dashed #ef4444"></div>Ngưỡng cảnh báo (70% TB)</div>
+    <div class="leg"><div class="leg-line" style="background:#3b82f6;opacity:0.7"></div>Trung bình</div>
+  </div>
+
+  <div class="chart-scroll">
+    <div class="chart-inner"><canvas id="chart"></canvas></div>
+  </div>
+
+  <p class="note">
+    Hover/tap vào điểm để xem tên công đoạn · Cuộn ngang để xem toàn bộ 100 công đoạn ·
+    Vùng tô đỏ = dưới ngưỡng cảnh báo
+  </p>
+</div>
+
+<div id="custom-tooltip"></div>
+
+<script>
+// ── Sinh dữ liệu giả 100 công đoạn ──
+const STAGE_NAMES = [];
+const STAGE_GROUPS = [
+  { prefix:'Trải vải', count:3 },
+  { prefix:'Cắt', count:8 },
+  { prefix:'Đánh số', count:2 },
+  { prefix:'Bó hàng', count:2 },
+  { prefix:'May thân trước', count:6 },
+  { prefix:'May thân sau', count:6 },
+  { prefix:'May tay áo', count:5 },
+  { prefix:'May cổ áo', count:4 },
+  { prefix:'May sườn', count:5 },
+  { prefix:'May ống quần', count:4 },
+  { prefix:'Thùa khuy', count:5 },
+  { prefix:'Đính cúc', count:4 },
+  { prefix:'Đính nhãn', count:3 },
+  { prefix:'Kiểm tra đường may', count:6 },
+  { prefix:'Là phẳng', count:5 },
+  { prefix:'Kiểm tra chất lượng', count:8 },
+  { prefix:'Vô túi', count:4 },
+  { prefix:'Đóng thùng', count:5 },
+  { prefix:'Dán nhãn thùng', count:3 },
+  { prefix:'Xuất kho', count:2 },
+];
+
+let idx = 1;
+STAGE_GROUPS.forEach(g => {
+  for (let i = 1; i <= g.count; i++) {
+    STAGE_NAMES.push(g.count === 1 ? g.prefix : `${g.prefix} (${i})`);
+    idx++;
+  }
+});
+
+// Sinh sản lượng giả với vài vùng tắc nghẽn rõ ràng
+function genData() {
+  const base = 850;
+  const noise = () => (Math.random() - 0.5) * 120;
+  const data = [];
+  for (let i = 0; i < 100; i++) {
+    let v = base + noise();
+    // Vùng tắc nghẽn thực tế
+    if (i >= 11 && i <= 15)  v = 380 + noise() * 0.4; // Cắt cuối: tắc nặng
+    if (i >= 28 && i <= 32)  v = 520 + noise() * 0.5; // May cổ: tắc vừa
+    if (i >= 47 && i <= 50)  v = 290 + noise() * 0.3; // Thùa khuy: tắc nặng
+    if (i >= 63 && i <= 66)  v = 480 + noise() * 0.4; // KT đường may: chậm
+    if (i >= 80 && i <= 83)  v = 610 + noise() * 0.4; // KT chất lượng: chậm
+    data.push(Math.round(Math.max(150, v)));
+  }
+  return data;
+}
+
+const quantities = genData();
+const avg = Math.round(quantities.reduce((a,b)=>a+b,0) / quantities.length);
+const threshold = Math.round(avg * 0.70);
+const minVal = Math.min(...quantities);
+const minIdx = quantities.indexOf(minVal);
+const bottlenecks = quantities.filter(v => v < threshold).length;
+
+// Stats
+const statsEl = document.getElementById('stats');
+const statsData = [
+  { l:'Trung bình/ca', v: avg.toLocaleString('vi-VN'), cls:'green' },
+  { l:'Công đoạn tắc', v: bottlenecks + ' công đoạn', cls:'red' },
+  { l:'Tắc nhất', v: STAGE_NAMES[minIdx], cls:'yellow', small:true },
+  { l:'Sản lượng thấp nhất', v: minVal.toLocaleString('vi-VN'), cls:'red' },
+];
+statsEl.innerHTML = statsData.map(s =>
+  `<div class="stat"><div class="stat-l">${s.l}</div>
+   <div class="stat-v ${s.cls}" style="${s.small?'font-size:0.8rem':''}">${s.v}</div></div>`
+).join('');
+
+// Màu từng điểm
+const ptColors = quantities.map(v =>
+  v < threshold ? '#ef4444' : v < avg ? '#eab308' : '#22c55e'
+);
+
+// Plugin vẽ vùng tô dưới ngưỡng
+const thresholdFillPlugin = {
+  id: 'thresholdFill',
+  beforeDraw(chart) {
+    const { ctx, chartArea: ca, scales } = chart;
+    if (!ca) return;
+    const yThresh = scales.y.getPixelForValue(threshold);
+    const yBot    = scales.y.getPixelForValue(scales.y.min);
+    if (yThresh > yBot) return;
+    ctx.save();
+    ctx.fillStyle = 'rgba(239,68,68,0.06)';
+    ctx.fillRect(ca.left, yThresh, ca.right - ca.left, yBot - yThresh);
+    ctx.restore();
+  }
+};
+
+// Plugin vẽ đường trung bình + ngưỡng
+const linesPlugin = {
+  id: 'refLines',
+  afterDraw(chart) {
+    const { ctx, chartArea: ca, scales } = chart;
+    if (!ca) return;
+
+    // Đường trung bình (xanh dương)
+    const yAvg = scales.y.getPixelForValue(avg);
+    ctx.save();
+    ctx.strokeStyle = 'rgba(59,130,246,0.6)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([6,4]);
+    ctx.beginPath(); ctx.moveTo(ca.left, yAvg); ctx.lineTo(ca.right, yAvg); ctx.stroke();
+    ctx.fillStyle = 'rgba(59,130,246,0.8)';
+    ctx.font = '10px Segoe UI';
+    ctx.fillText('TB ' + avg.toLocaleString('vi-VN'), ca.right - 68, yAvg - 4);
+
+    // Đường ngưỡng cảnh báo (đỏ)
+    const yThr = scales.y.getPixelForValue(threshold);
+    ctx.strokeStyle = 'rgba(239,68,68,0.5)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4,4]);
+    ctx.beginPath(); ctx.moveTo(ca.left, yThr); ctx.lineTo(ca.right, yThr); ctx.stroke();
+    ctx.fillStyle = 'rgba(239,68,68,0.8)';
+    ctx.fillText('Ngưỡng ' + threshold.toLocaleString('vi-VN'), ca.right - 90, yThr - 4);
+    ctx.restore();
+  }
+};
+
+const chart = new Chart(document.getElementById('chart'), {
+  type: 'line',
+  plugins: [thresholdFillPlugin, linesPlugin],
+  data: {
+    labels: quantities.map((_,i) => i+1),
+    datasets: [{
+      data: quantities,
+      borderColor: '#22c55e',
+      borderWidth: 1.5,
+      tension: 0.3,
+      fill: true,
+      backgroundColor: (ctx) => {
+        const chart = ctx.chart;
+        const { ctx: c, chartArea } = chart;
+        if (!chartArea) return 'transparent';
+        const grad = c.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+        grad.addColorStop(0, 'rgba(34,197,94,0.12)');
+        grad.addColorStop(1, 'rgba(34,197,94,0.01)');
+        return grad;
+      },
+      pointBackgroundColor: ptColors,
+      pointBorderColor: ptColors,
+      pointRadius: 3,
+      pointHoverRadius: 6,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 800 },
+    plugins: {
+      legend: { display: false },
+      tooltip: { enabled: false },
+    },
+    scales: {
+      x: {
+        ticks: {
+          color: '#444', font: { size: 9 },
+          maxTicksLimit: 20,
+          callback: (_, i) => (i+1) % 5 === 0 || i === 0 ? i+1 : '',
+        },
+        grid: { color: '#161616' },
+        title: { display: true, text: 'Công đoạn', color: '#444', font: { size: 10 } },
+      },
+      y: {
+        ticks: { color: '#555', font: { size: 10 }, callback: v => v.toLocaleString('vi-VN') },
+        grid: { color: '#1a1a1a' },
+        beginAtZero: false,
+        title: { display: true, text: 'Sản lượng', color: '#444', font: { size: 10 } },
+      },
+    },
+    onHover: (evt, elements) => {
+      const tt = document.getElementById('custom-tooltip');
+      if (!elements.length) { tt.style.display = 'none'; return; }
+      const i = elements[0].index;
+      const v = quantities[i];
+      const diff = v - avg;
+      const cls = v < threshold ? 'red' : v < avg ? 'yellow' : 'green';
+      const sign = diff >= 0 ? '+' : '';
+      tt.innerHTML =
+        `<div class="tt-stage">Công đoạn ${i+1}</div>` +
+        `<div class="tt-name">${STAGE_NAMES[i]}</div>` +
+        `<div class="tt-qty ${cls}">${v.toLocaleString('vi-VN')} sản phẩm</div>` +
+        `<div class="tt-vs" style="color:${diff>=0?'#22c55e':'#ef4444'}">${sign}${diff.toLocaleString('vi-VN')} so với TB</div>`;
+      tt.style.display = 'block';
+      tt.style.left = (evt.native.clientX + 14) + 'px';
+      tt.style.top  = (evt.native.clientY - 10) + 'px';
+    },
+  },
+});
+
+document.addEventListener('mousemove', e => {
+  if (e.target.tagName !== 'CANVAS') {
+    document.getElementById('custom-tooltip').style.display = 'none';
+  }
+});
+</script>
+</body>
+</html>

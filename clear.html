@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Đang cập nhật...</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0a0a0a;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      font-family: -apple-system, sans-serif;
+      gap: 1.25rem;
+    }
+    .spinner {
+      width: 52px; height: 52px;
+      border: 3px solid #1e1e1e;
+      border-top-color: #22c55e;
+      border-radius: 50%;
+      animation: spin 0.75s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .title { font-size: 1rem; font-weight: 600; color: #fff; }
+    .sub   { font-size: 0.8rem; color: #555; }
+  </style>
+</head>
+<body>
+  <div class="spinner"></div>
+  <p class="title">Đang cập nhật ứng dụng...</p>
+  <p class="sub" id="msg">Vui lòng chờ trong giây lát</p>
+  <script>
+    async function nukeAndReload() {
+      try {
+        if ('serviceWorker' in navigator) {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(regs.map(r => r.unregister()));
+        }
+        if ('caches' in window) {
+          const keys = await caches.keys();
+          await Promise.all(keys.map(k => caches.delete(k)));
+        }
+      } catch(e) {}
+      document.getElementById('msg').textContent = 'Hoàn tất! Đang mở ứng dụng...';
+      setTimeout(() => window.location.replace('/'), 800);
+    }
+    nukeAndReload();
+  </script>
+</body>
+</html>

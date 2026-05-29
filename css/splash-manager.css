@@ -1,0 +1,154 @@
+/* ══════════════════════════════════════
+   SPLASH SCREEN — Máy khâu (manager only)
+══════════════════════════════════════ */
+#splash {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: #0a0a0a;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2.5rem;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity  0.3s ease 0.4s;
+}
+#splash.exit {
+  transform: translateY(-100%);
+  opacity: 0;
+}
+
+#splash::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 55% 45% at 50% 42%, rgba(34,197,94,0.09) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* ── Sewing machine SVG ── */
+.sp-sewing-svg { width: 260px; height: 260px; overflow: visible; }
+
+/* Machine body fades + rises */
+#sp-machine {
+  opacity: 0;
+  transform: translateY(12px);
+  animation: sp-machine-in 1s cubic-bezier(0.16,1,0.3,1) 0.15s forwards;
+}
+@keyframes sp-machine-in {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Thread line draws from spool to needle */
+#sp-thread-line {
+  stroke-dasharray: 230;
+  stroke-dashoffset: 230;
+  animation: sp-draw 2s cubic-bezier(0.16,1,0.3,1) 0.7s forwards;
+}
+@keyframes sp-draw { to { stroke-dashoffset: 0; } }
+
+/* Needle bounces up/down */
+#sp-needle-mech {
+  animation: sp-needle-stitch 0.72s ease-in-out 2.4s infinite;
+}
+@keyframes sp-needle-stitch {
+  0%, 35%, 100% { transform: translateY(0); }
+  50%, 85%      { transform: translateY(-20px); }
+}
+
+/* Machine light pulses with needle */
+#sp-light-glow {
+  animation: sp-light-pulse 0.72s ease-in-out 2.4s infinite;
+}
+@keyframes sp-light-pulse {
+  0%, 35%, 100% { opacity: 0.18; }
+  50%, 85%      { opacity: 0.65; }
+}
+
+/* Fabric appears */
+#sp-fabric {
+  opacity: 0;
+  animation: sp-fade 0.6s ease 2.2s forwards;
+}
+
+/* Stitches appear then march */
+#sp-stitch-line {
+  opacity: 0;
+  animation: sp-fade 0.6s ease 2.4s forwards,
+             sp-stitch-march 0.72s linear 2.4s infinite;
+}
+@keyframes sp-stitch-march { to { stroke-dashoffset: -18; } }
+
+/* Spools spin */
+#sp-arm-spool-lines {
+  transform-origin: 72px 84px;
+  animation: sp-spin 3s linear 1.4s infinite;
+}
+#sp-col-spool-lines {
+  transform-origin: 205px 58px;
+  animation: sp-spin 4s linear 1.4s infinite;
+}
+
+/* ── Shared keyframes ── */
+@keyframes sp-fade { to { opacity: 1; } }
+@keyframes sp-spin { to { transform: rotate(360deg); } }
+@keyframes sp-up   { to { opacity: 1; transform: translateY(0); } }
+@keyframes sp-blink { 0%,100% { opacity: .3; } 50% { opacity: 1; } }
+
+/* ── Brand block ── */
+.sp-brand {
+  text-align: center;
+  opacity: 0;
+  transform: translateY(14px);
+  animation: sp-up 1s ease 2.6s forwards;
+}
+.sp-brand-name {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #fff;
+  font-family: var(--font);
+  text-shadow: 0 0 28px rgba(255,255,255,0.28);
+}
+.sp-brand-sub {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: #444;
+  font-family: var(--font);
+  margin-top: 5px;
+}
+
+/* ── Welcome text ── */
+.sp-welcome {
+  text-align: center;
+  max-width: 280px;
+  padding: 0 1rem;
+  opacity: 0;
+  transform: translateY(10px);
+  animation: sp-up 1s ease 3.1s forwards;
+}
+.sp-welcome-text {
+  font-size: 0.88rem;
+  font-style: italic;
+  color: #606060;
+  font-family: var(--font);
+  line-height: 1.6;
+  text-align: center;
+}
+
+/* ── Tap hint ── */
+.sp-tap {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: #333;
+  font-family: var(--font);
+  opacity: 0;
+  animation: sp-fade 1s ease 4.2s forwards,
+             sp-blink 2.2s ease-in-out 5.2s infinite;
+}

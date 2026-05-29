@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Preview — Các dạng biểu đồ</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0a0a0a; --bg-card: #111; --border: #1f1f1f; --border-hi: #2a2a2a;
+    --text: #e5e5e5; --text-sub: #999; --text-muted: #555;
+    --green: #22c55e; --green-dim: rgba(34,197,94,0.08); --green-ring: rgba(34,197,94,0.25);
+    --red: #ef4444; --yellow: #eab308; --blue: #3b82f6;
+    --font: 'Segoe UI', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); padding: 1.5rem 1rem 4rem; }
+
+  h1 { font-size: 1.1rem; font-weight: 700; color: var(--text); margin-bottom: 0.25rem; }
+  .page-sub { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 2rem; }
+
+  .section { margin-bottom: 2.5rem; }
+  .section-title {
+    font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 0.75rem;
+  }
+  .card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 1.1rem 1rem;
+  }
+  .card-title { font-size: 0.82rem; font-weight: 600; color: var(--text-sub); margin-bottom: 1rem; }
+  .chart-wrap { position: relative; height: 260px; }
+  .chart-wrap-tall { position: relative; height: 340px; }
+
+  /* ── Heatmap ── */
+  .heatmap { display: grid; gap: 4px; }
+  .hm-row { display: grid; gap: 4px; align-items: center; }
+  .hm-label { font-size: 0.7rem; color: var(--text-sub); white-space: nowrap;
+              overflow: hidden; text-overflow: ellipsis; padding-right: 6px; }
+  .hm-cells { display: flex; gap: 4px; }
+  .hm-cell {
+    flex: 1; height: 32px; border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.62rem; font-weight: 700; color: rgba(255,255,255,0.7);
+  }
+  .hm-header { display: flex; gap: 4px; padding-left: 0; margin-bottom: 2px; }
+  .hm-day { flex: 1; text-align: center; font-size: 0.62rem; color: var(--text-muted); font-weight: 600; }
+  .hm-legend { display: flex; gap: 1rem; margin-top: 0.75rem; }
+  .hm-leg-item { display: flex; align-items: center; gap: 0.4rem; font-size: 0.68rem; color: var(--text-muted); }
+  .hm-dot { width: 10px; height: 10px; border-radius: 2px; }
+
+  /* ── Sankey CSS ── */
+  .sankey-wrap { overflow-x: auto; padding-bottom: 0.5rem; }
+  .sankey { display: flex; gap: 0; align-items: stretch; min-width: 540px; }
+  .sk-col { display: flex; flex-direction: column; align-items: center; flex: 1; }
+  .sk-node {
+    width: 100%; background: var(--bg-card); border: 1px solid var(--border-hi);
+    border-radius: 6px; padding: 0.4rem 0.3rem; text-align: center;
+    font-size: 0.65rem; color: var(--text-sub); position: relative;
+    margin: auto 0;
+  }
+  .sk-node .sk-qty { font-size: 0.78rem; font-weight: 700; color: var(--green); display: block; }
+  .sk-node.bottleneck { border-color: rgba(239,68,68,0.5); }
+  .sk-node.bottleneck .sk-qty { color: var(--red); }
+  .sk-node.ok { border-color: var(--green-ring); }
+  .sk-arrow { display: flex; align-items: center; padding: 0 4px; }
+  .sk-arrow-inner {
+    height: 2px; background: var(--green); opacity: 0.3;
+    transition: height 0.3s;
+  }
+  .sk-arrow.thin .sk-arrow-inner { height: 1px; opacity: 0.15; background: var(--red); }
+  .sk-arrow.thick .sk-arrow-inner { height: 6px; opacity: 0.5; }
+  .sk-label { font-size: 0.58rem; color: var(--text-muted); margin-top: 4px; text-align: center; }
+  .sk-drop { font-size: 0.6rem; color: #ef4444; text-align: center; margin-top: 2px; }
+
+  /* ── Progress line legend ── */
+  .legend { display: flex; gap: 1.25rem; margin-bottom: 0.75rem; }
+  .leg-item { display: flex; align-items: center; gap: 0.4rem; font-size: 0.72rem; color: var(--text-sub); }
+  .leg-line { width: 20px; height: 2px; border-radius: 1px; }
+
+  /* badge note */
+  .note {
+    font-size: 0.7rem; color: var(--text-muted); font-style: italic;
+    margin-top: 0.6rem; padding-top: 0.6rem; border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<h1>Preview — Các dạng biểu đồ cho trang quản lý</h1>
+<p class="page-sub">Dữ liệu giả — đơn 12.000 sản phẩm / 9 công đoạn</p>
+
+<!-- ══ 1. HORIZONTAL BAR ══ -->
+<div class="section">
+  <div class="section-title">Dạng 1 — Thanh ngang theo công đoạn (% hoàn thành)</div>
+  <div class="card">
+    <div class="card-title">Tiến độ từng công đoạn — hôm nay</div>
+    <div class="chart-wrap-tall"><canvas id="c-hbar"></canvas></div>
+    <p class="note">Màu đỏ = tắc nghẽn (dưới 50% mục tiêu ngày). Thanh xám nhạt = mục tiêu.</p>
+  </div>
+</div>
+
+<!-- ══ 2. WATERFALL / FUNNEL ══ -->
+<div class="section">
+  <div class="section-title">Dạng 2 — Phễu sản xuất (số lượng thực tế qua từng công đoạn)</div>
+  <div class="card">
+    <div class="card-title">Hàng qua từng công đoạn — lũy kế đến hôm nay</div>
+    <div class="chart-wrap-tall"><canvas id="c-funnel"></canvas></div>
+    <p class="note">Khoảng trống giữa 2 thanh = số hàng bị giữ lại / lỗi / chưa chuyển công đoạn.</p>
+  </div>
+</div>
+
+<!-- ══ 3. SANKEY CSS ══ -->
+<div class="section">
+  <div class="section-title">Dạng 3 — Dòng chảy (Sankey đơn giản)</div>
+  <div class="card">
+    <div class="card-title">Hàng chảy từ công đoạn đầu → cuối</div>
+    <div class="sankey-wrap">
+      <div class="sankey" id="sankey-chart"></div>
+    </div>
+    <p class="note">Độ đậm của mũi tên = lưu lượng. Ô đỏ = tắc nghẽn. Phiên bản thực dùng D3.js sẽ có mũi tên cong đẹp hơn.</p>
+  </div>
+</div>
+
+<!-- ══ 4. HEATMAP ══ -->
+<div class="section">
+  <div class="section-title">Dạng 4 — Heatmap (công đoạn × ngày)</div>
+  <div class="card">
+    <div class="card-title">Tình trạng từng công đoạn — 5 ngày gần nhất</div>
+    <div id="heatmap"></div>
+    <div class="hm-legend">
+      <div class="hm-leg-item"><div class="hm-dot" style="background:#166534"></div>Đủ sản lượng</div>
+      <div class="hm-leg-item"><div class="hm-dot" style="background:#854d0e"></div>Chậm</div>
+      <div class="hm-leg-item"><div class="hm-dot" style="background:#7f1d1d"></div>Tắc nghẽn</div>
+      <div class="hm-leg-item"><div class="hm-dot" style="background:#1f1f1f"></div>Chưa đến</div>
+    </div>
+    <p class="note">Nhìn theo cột = tình trạng ngày đó. Nhìn theo hàng = công đoạn nào liên tục có vấn đề.</p>
+  </div>
+</div>
+
+<!-- ══ 5. PROGRESS vs TARGET ══ -->
+<div class="section">
+  <div class="section-title">Dạng 5 — Tiến độ tích lũy vs Mục tiêu</div>
+  <div class="card">
+    <div class="card-title">Sản lượng thực tế vs kế hoạch — 7 ngày</div>
+    <div class="legend">
+      <div class="leg-item"><div class="leg-line" style="background:#22c55e"></div>Thực tế</div>
+      <div class="leg-item"><div class="leg-line" style="background:#3b82f6; opacity:0.6"></div>Kế hoạch</div>
+    </div>
+    <div class="chart-wrap"><canvas id="c-progress"></canvas></div>
+    <p class="note">Đường xanh lá dưới đường xanh dương = đang trễ tiến độ. Khoảng cách = số hàng cần bù.</p>
+  </div>
+</div>
+
+<script>
+const STAGES = ['Cắt vải','May thân','May tay','May cổ','Thùa khuy','Đính cúc','Là','KT chất lượng','Đóng gói'];
+const ACTUAL  = [11800, 8500, 4100, 4050, 3900, 3860, 3820, 3750, 3600];
+const TARGET  = 12000;
+const DAY_TARGET = [1300,1300,1300,1300,1300,1300,1300,1300,1300]; // mục tiêu ngày/công đoạn
+
+const CHART_BASE = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend: { display: false } },
+};
+
+// ── MÀUVÀNG/ĐỎ/XANH theo ngưỡng ──
+function barColor(val, target) {
+  const pct = val / target;
+  if (pct >= 0.8) return 'rgba(34,197,94,0.55)';
+  if (pct >= 0.5) return 'rgba(234,179,8,0.55)';
+  return 'rgba(239,68,68,0.55)';
+}
+function borderColor(val, target) {
+  const pct = val / target;
+  if (pct >= 0.8) return '#22c55e';
+  if (pct >= 0.5) return '#eab308';
+  return '#ef4444';
+}
+
+// ══ 1. Horizontal Bar ══
+new Chart(document.getElementById('c-hbar'), {
+  type: 'bar',
+  data: {
+    labels: STAGES,
+    datasets: [
+      {
+        label: 'Mục tiêu',
+        data: DAY_TARGET,
+        backgroundColor: 'rgba(255,255,255,0.04)',
+        borderColor: '#2a2a2a', borderWidth: 1, borderRadius: 4,
+      },
+      {
+        label: 'Thực tế hôm nay',
+        data: [980, 620, 290, 310, 320, 300, 290, 280, 250],
+        backgroundColor: STAGES.map((_,i) => barColor([980,620,290,310,320,300,290,280,250][i], DAY_TARGET[i])),
+        borderColor:     STAGES.map((_,i) => borderColor([980,620,290,310,320,300,290,280,250][i], DAY_TARGET[i])),
+        borderWidth: 1, borderRadius: 4,
+      },
+    ],
+  },
+  options: {
+    ...CHART_BASE,
+    indexAxis: 'y',
+    scales: {
+      x: { ticks: { color: '#555', font:{size:10} }, grid: { color: '#161616' }, max: 1400 },
+      y: { ticks: { color: '#999', font:{size:11} }, grid: { display: false } },
+    },
+    plugins: { legend: { display: false } },
+  },
+});
+
+// ══ 2. Funnel / Waterfall ══
+new Chart(document.getElementById('c-funnel'), {
+  type: 'bar',
+  data: {
+    labels: STAGES,
+    datasets: [{
+      data: ACTUAL,
+      backgroundColor: ACTUAL.map((v,i) => {
+        if (i === 0) return 'rgba(34,197,94,0.45)';
+        const drop = ACTUAL[i-1] - v;
+        if (drop > 3000) return 'rgba(239,68,68,0.45)';
+        if (drop > 1000) return 'rgba(234,179,8,0.45)';
+        return 'rgba(34,197,94,0.35)';
+      }),
+      borderColor: ACTUAL.map((v,i) => {
+        if (i === 0) return '#22c55e';
+        const drop = ACTUAL[i-1] - v;
+        if (drop > 3000) return '#ef4444';
+        if (drop > 1000) return '#eab308';
+        return '#22c55e';
+      }),
+      borderWidth: 1, borderRadius: 4,
+    }],
+  },
+  options: {
+    ...CHART_BASE,
+    scales: {
+      x: { ticks: { color: '#555', font:{size:10} }, grid: { display: false } },
+      y: { ticks: { color: '#999', font:{size:10} }, grid: { color: '#161616' }, beginAtZero: true, max: 13000 },
+    },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          afterLabel: (ctx) => {
+            const i = ctx.dataIndex;
+            if (i === 0) return '← điểm bắt đầu';
+            const drop = ACTUAL[i-1] - ACTUAL[i];
+            return `Rơi: ${drop.toLocaleString('vi-VN')} sản phẩm`;
+          }
+        }
+      }
+    },
+  },
+});
+
+// ══ 3. Sankey CSS ══
+(function() {
+  const drops = ACTUAL.map((v,i) => i === 0 ? 0 : ACTUAL[i-1] - v);
+  const maxFlow = ACTUAL[0];
+  const san = document.getElementById('sankey-chart');
+
+  STAGES.forEach((name, i) => {
+    const col = document.createElement('div');
+    col.className = 'sk-col';
+
+    const node = document.createElement('div');
+    const drop = drops[i];
+    const isBottleneck = drop > 3000;
+    const isOk = drop < 200;
+    node.className = 'sk-node' + (isBottleneck ? ' bottleneck' : (isOk ? ' ok' : ''));
+    node.innerHTML = `<span style="font-size:0.62rem;color:var(--text-muted)">${name}</span><span class="sk-qty">${ACTUAL[i].toLocaleString('vi-VN')}</span>`;
+
+    const lbl = document.createElement('div');
+    lbl.className = 'sk-label';
+    if (i > 0 && drop > 0) {
+      lbl.innerHTML = `<span class="sk-drop">-${drop.toLocaleString('vi-VN')}</span>`;
+    }
+
+    col.appendChild(node);
+    col.appendChild(lbl);
+    san.appendChild(col);
+
+    if (i < STAGES.length - 1) {
+      const arrow = document.createElement('div');
+      const nextDrop = drops[i+1];
+      arrow.className = 'sk-arrow' + (nextDrop > 3000 ? ' thin' : (nextDrop < 200 ? ' thick' : ''));
+      const thickness = Math.max(1, Math.round((ACTUAL[i+1] / maxFlow) * 8));
+      arrow.innerHTML = `<div class="sk-arrow-inner" style="width:28px;height:${thickness}px"></div>`;
+      san.appendChild(arrow);
+    }
+  });
+}());
+
+// ══ 4. Heatmap ══
+(function() {
+  const days  = ['T2','T3','T4','T5','T6'];
+  const data  = [
+  //  T2   T3   T4   T5   T6
+    [ 2,   2,   1,   0,   0 ],  // Cắt vải
+    [ 2,   1,   0,   0,   0 ],  // May thân — tắc T4-T6
+    [ 2,   2,   2,   1,   0 ],  // May tay
+    [ 2,   2,   2,   2,   1 ],  // May cổ
+    [ 2,   2,   2,   2,   2 ],  // Thùa khuy
+    [ 2,   2,   2,   2,   2 ],  // Đính cúc
+    [ 1,   2,   2,   2,   2 ],  // Là
+    [-1,  -1,   2,   2,   2 ],  // KT CL (chưa đến T2-T3)
+    [-1,  -1,  -1,   1,   2 ],  // Đóng gói
+  ];
+  // 2=ok, 1=slow, 0=bottleneck, -1=not yet
+  const colors = { 2:'#166534', 1:'#854d0e', 0:'#7f1d1d', '-1':'#1a1a1a' };
+  const labels = { 2:'✓', 1:'~', 0:'✗', '-1':'' };
+
+  const wrap = document.getElementById('heatmap');
+
+  // Header
+  const header = document.createElement('div');
+  header.style.cssText = 'display:grid;grid-template-columns:90px 1fr;gap:4px;margin-bottom:4px';
+  header.innerHTML = `<div></div><div class="hm-cells">${days.map(d=>`<div class="hm-day">${d}</div>`).join('')}</div>`;
+  wrap.appendChild(header);
+
+  STAGES.forEach((name, si) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:grid;grid-template-columns:90px 1fr;gap:4px;margin-bottom:4px';
+
+    const lbl = document.createElement('div');
+    lbl.className = 'hm-label';
+    lbl.textContent = name;
+    lbl.style.cssText = 'font-size:0.68rem;color:var(--text-sub);display:flex;align-items:center;';
+
+    const cells = document.createElement('div');
+    cells.className = 'hm-cells';
+    data[si].forEach(v => {
+      const cell = document.createElement('div');
+      cell.className = 'hm-cell';
+      cell.style.background = colors[v] || '#1a1a1a';
+      cell.textContent = labels[v] || '';
+      cells.appendChild(cell);
+    });
+
+    row.appendChild(lbl);
+    row.appendChild(cells);
+    wrap.appendChild(row);
+  });
+}());
+
+// ══ 5. Progress vs Target ══
+(function() {
+  const days = ['3/5','4/5','5/5','6/5','7/5','8/5','9/5'];
+  const planned  = [1400, 2800, 4200, 5600, 7000, 8400, 9800];
+  const actual   = [1350, 2600, 3750, 4800, 6100, 7400, 8700];
+
+  new Chart(document.getElementById('c-progress'), {
+    type: 'line',
+    data: {
+      labels: days,
+      datasets: [
+        {
+          label: 'Kế hoạch',
+          data: planned,
+          borderColor: 'rgba(59,130,246,0.6)',
+          backgroundColor: 'rgba(59,130,246,0.05)',
+          borderDash: [5,4], fill: true, tension: 0.1,
+          pointRadius: 3, pointBackgroundColor: '#3b82f6',
+        },
+        {
+          label: 'Thực tế',
+          data: actual,
+          borderColor: '#22c55e',
+          backgroundColor: 'rgba(34,197,94,0.08)',
+          fill: true, tension: 0.35,
+          pointRadius: 4, pointBackgroundColor: '#22c55e',
+        },
+      ],
+    },
+    options: {
+      ...CHART_BASE,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color:'#555', font:{size:10} }, grid: { color:'#161616' } },
+        y: {
+          ticks: { color:'#555', font:{size:10}, callback: v => v.toLocaleString('vi-VN') },
+          grid: { color:'#161616' }, beginAtZero: true,
+          max: 12000,
+        },
+      },
+    },
+  });
+}());
+</script>
+</body>
+</html>

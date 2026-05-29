@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Splash A — Vòng Sáng</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a0a; font-family: 'Segoe UI', sans-serif; }
+  #splash {
+    position: fixed; inset: 0; background: #0a0a0a;
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 2.5rem; cursor: pointer; user-select: none;
+    transition: transform 0.7s cubic-bezier(0.4,0,0.2,1), opacity 0.3s ease 0.4s;
+  }
+  #splash.exit { transform: translateY(-100%); opacity: 0; }
+  #splash::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse 60% 50% at 50% 42%, rgba(34,197,94,0.12) 0%, transparent 70%);
+  }
+
+  .sp-ring-svg { width: 260px; height: 260px; overflow: visible; }
+
+  /* Outer ring draws then rotates */
+  #sp-outer-ring {
+    stroke-dasharray: 691; stroke-dashoffset: 691;
+    animation: sp-draw 2.2s cubic-bezier(0.16,1,0.3,1) 0.3s forwards;
+    transform-origin: 130px 130px;
+  }
+  #sp-outer-spin {
+    transform-origin: 130px 130px;
+    animation: sp-slow-spin 18s linear 2.5s infinite;
+  }
+  /* Inner ring */
+  #sp-inner-ring {
+    stroke-dasharray: 440; stroke-dashoffset: 440;
+    animation: sp-draw 1.6s ease-out 1.4s forwards;
+    transform-origin: 130px 130px;
+  }
+  #sp-inner-spin {
+    transform-origin: 130px 130px;
+    animation: sp-slow-spin 12s linear 3s infinite reverse;
+  }
+
+  /* Glow dots on outer ring */
+  #sp-dot1 { animation: sp-orbit1 4s linear 2.5s infinite; transform-origin: 130px 130px; }
+  #sp-dot2 { animation: sp-orbit1 4s linear 3.5s infinite; transform-origin: 130px 130px; opacity: 0.5; }
+
+  /* Needle group */
+  #sp-needle-group { opacity: 0; animation: sp-pop 0.3s ease 0.3s forwards; }
+
+  /* Spool */
+  #sp-spool-g { opacity: 0; animation: sp-fade 1s ease 2s forwards; }
+  #sp-spool-lines { transform-origin: 130px 130px; animation: sp-spin 4s linear 2s infinite; }
+
+  /* Centre pulse ring */
+  #sp-pulse {
+    transform-origin: 130px 130px;
+    animation: sp-pulse-ring 2.4s ease-out 2.2s infinite;
+  }
+
+  @keyframes sp-draw { to { stroke-dashoffset: 0; } }
+  @keyframes sp-fade { to { opacity: 1; } }
+  @keyframes sp-pop  { to { opacity: 1; } }
+  @keyframes sp-spin { to { transform: rotate(360deg); } }
+  @keyframes sp-slow-spin { to { transform: rotate(360deg); } }
+  @keyframes sp-orbit1 { to { transform: rotate(360deg); } }
+  @keyframes sp-pulse-ring {
+    0%   { r: 28; opacity: 0.6; }
+    100% { r: 54; opacity: 0; }
+  }
+  @keyframes sp-up    { to { opacity: 1; transform: translateY(0); } }
+  @keyframes sp-blink { 0%,100% { opacity: .3; } 50% { opacity: 1; } }
+
+  .sp-brand {
+    text-align: center; opacity: 0; transform: translateY(14px);
+    animation: sp-up 1s ease 2.4s forwards;
+  }
+  .sp-brand-name {
+    font-size: 2rem; font-weight: 800; letter-spacing: -0.03em;
+    color: #fff; text-shadow: 0 0 28px rgba(255,255,255,0.28);
+  }
+  .sp-brand-sub {
+    font-size: 0.68rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.16em; color: #444; margin-top: 5px;
+  }
+  .sp-welcome {
+    text-align: center; max-width: 280px; padding: 0 1rem;
+    opacity: 0; transform: translateY(10px);
+    animation: sp-up 1s ease 2.9s forwards;
+  }
+  .sp-welcome-text {
+    font-size: 0.88rem; font-style: italic; color: #606060; line-height: 1.6; text-align: center;
+  }
+  .sp-tap {
+    font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.14em;
+    color: #333; opacity: 0;
+    animation: sp-fade 1s ease 4s forwards, sp-blink 2.2s ease-in-out 5s infinite;
+  }
+</style>
+</head>
+<body>
+<div id="splash">
+  <svg class="sp-ring-svg" viewBox="0 0 260 260" fill="none">
+    <!-- Static backing ring -->
+    <circle cx="130" cy="130" r="110" stroke="#161616" stroke-width="1.5"/>
+
+    <!-- Outer ring: draws then container slowly spins -->
+    <g id="sp-outer-spin">
+      <circle id="sp-outer-ring" cx="130" cy="130" r="110"
+        stroke="#22c55e" stroke-width="2" stroke-dasharray="10 6" stroke-linecap="round"/>
+    </g>
+
+    <!-- Glowing orbiting dots -->
+    <g id="sp-dot1">
+      <circle cx="130" cy="20" r="3.5" fill="#22c55e" filter="url(#glow)"/>
+    </g>
+    <g id="sp-dot2">
+      <circle cx="130" cy="20" r="2.5" fill="#4ade80"/>
+    </g>
+
+    <!-- Inner ring spins reverse -->
+    <g id="sp-inner-spin">
+      <circle id="sp-inner-ring" cx="130" cy="130" r="70"
+        stroke="#1c3a28" stroke-width="1.5" stroke-dasharray="5 9" stroke-linecap="round"/>
+    </g>
+
+    <!-- Pulse ring emanating from centre -->
+    <circle id="sp-pulse" cx="130" cy="130" r="28" fill="none" stroke="#22c55e" stroke-width="1" opacity="0"/>
+
+    <!-- Motion path for needle -->
+    <path id="sp-motion-path" d="M 130 20 A 110 110 0 1 1 129.99 20.001" stroke="none" fill="none"/>
+    <g id="sp-needle-group">
+      <animateMotion dur="2.2s" fill="freeze" calcMode="spline" keyTimes="0;1" keySplines="0.16,1,0.3,1">
+        <mpath href="#sp-motion-path"/>
+      </animateMotion>
+      <rect x="-2" y="-18" width="4" height="22" rx="2" fill="#d8d8d8"/>
+      <circle cx="0" cy="5" r="2" fill="#22c55e"/>
+      <path d="M0,5 L-1,12 L0,11.5 L1,12 Z" fill="#22c55e"/>
+    </g>
+
+    <!-- Spool -->
+    <g id="sp-spool-g">
+      <ellipse cx="130" cy="124" rx="24" ry="11" fill="#181818" stroke="#282828" stroke-width="1.5"/>
+      <rect x="106" y="124" width="48" height="12" fill="#181818"/>
+      <ellipse cx="130" cy="136" rx="24" ry="11" fill="#181818" stroke="#282828" stroke-width="1.5"/>
+      <g id="sp-spool-lines">
+        <ellipse cx="130" cy="130" rx="19" ry="9" fill="none" stroke="#22c55e" stroke-width="1.2" opacity="0.55"/>
+        <line x1="111" y1="130" x2="149" y2="130" stroke="#22c55e" stroke-width="1.2" opacity="0.35"/>
+      </g>
+      <ellipse cx="130" cy="124" rx="24" ry="11" fill="none" stroke="#303030" stroke-width="1"/>
+    </g>
+
+    <defs>
+      <filter id="glow" x="-100%" y="-100%" width="300%" height="300%">
+        <feGaussianBlur stdDeviation="3" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
+  </svg>
+
+  <div class="sp-brand">
+    <div class="sp-brand-name">YoungStory</div>
+    <div class="sp-brand-sub">Bảng báo cáo sản xuất</div>
+  </div>
+  <div class="sp-welcome">
+    <div class="sp-welcome-text">Mỗi đường chỉ là một nỗ lực, mỗi sản phẩm là niềm tự hào.</div>
+  </div>
+  <div class="sp-tap">Chạm để bắt đầu</div>
+</div>
+<script>
+  document.getElementById('splash').addEventListener('click', function() {
+    this.classList.add('exit');
+  });
+</script>
+</body>
+</html>

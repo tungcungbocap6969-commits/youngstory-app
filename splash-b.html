@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Splash B — Đường Chỉ</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a0a; font-family: 'Segoe UI', sans-serif; }
+  #splash {
+    position: fixed; inset: 0; background: #0a0a0a;
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 2.5rem; cursor: pointer; user-select: none;
+    transition: transform 0.7s cubic-bezier(0.4,0,0.2,1), opacity 0.3s ease 0.4s;
+  }
+  #splash.exit { transform: translateY(-100%); opacity: 0; }
+  #splash::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse 55% 45% at 50% 42%, rgba(34,197,94,0.09) 0%, transparent 70%);
+  }
+
+  .sp-ring-svg { width: 260px; height: 260px; overflow: visible; }
+
+  /* Outer ring draws */
+  #sp-outer-ring {
+    stroke-dasharray: 691; stroke-dashoffset: 691;
+    animation: sp-draw 2.8s cubic-bezier(0.16,1,0.3,1) 0.3s forwards;
+  }
+  /* Inner ring draws */
+  #sp-inner-ring {
+    stroke-dasharray: 440; stroke-dashoffset: 440;
+    animation: sp-draw 1.8s ease-out 1.6s forwards;
+  }
+  /* Spool */
+  #sp-spool-g { opacity: 0; animation: sp-fade 1s ease 2.2s forwards; }
+  #sp-spool-lines { transform-origin: 130px 130px; animation: sp-spin 5s linear 2.2s infinite; }
+
+  /* Needle */
+  #sp-needle-group { opacity: 0; animation: sp-pop 0.3s ease 0.3s forwards; }
+
+  /* Fabric strip appears */
+  #sp-fabric-g { opacity: 0; animation: sp-fade 0.5s ease 2.8s forwards; }
+
+  /* Stitch line draws across fabric */
+  #sp-stitch {
+    stroke-dasharray: 120; stroke-dashoffset: 120;
+    animation: sp-draw-stitch 1.2s ease 3s forwards;
+  }
+  /* Stitch dashes march */
+  #sp-stitch-march {
+    opacity: 0;
+    animation: sp-fade 0.4s ease 4.1s forwards, sp-march 0.6s linear 4.1s infinite;
+  }
+
+  /* Thread arc from spool to edge */
+  #sp-thread-arc {
+    stroke-dasharray: 180; stroke-dashoffset: 180;
+    animation: sp-draw 1.4s ease 2.4s forwards;
+  }
+
+  @keyframes sp-draw         { to { stroke-dashoffset: 0; } }
+  @keyframes sp-draw-stitch  { to { stroke-dashoffset: 0; } }
+  @keyframes sp-march        { to { stroke-dashoffset: -16; } }
+  @keyframes sp-fade         { to { opacity: 1; } }
+  @keyframes sp-pop          { to { opacity: 1; } }
+  @keyframes sp-spin         { to { transform: rotate(360deg); } }
+  @keyframes sp-up           { to { opacity: 1; transform: translateY(0); } }
+  @keyframes sp-blink        { 0%,100% { opacity:.3; } 50% { opacity:1; } }
+
+  .sp-brand {
+    text-align: center; opacity: 0; transform: translateY(14px);
+    animation: sp-up 1s ease 2.6s forwards;
+  }
+  .sp-brand-name {
+    font-size: 2rem; font-weight: 800; letter-spacing: -0.03em;
+    color: #fff; text-shadow: 0 0 28px rgba(255,255,255,0.28);
+  }
+  .sp-brand-sub {
+    font-size: 0.68rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.16em; color: #444; margin-top: 5px;
+  }
+  .sp-welcome {
+    text-align: center; max-width: 280px; padding: 0 1rem;
+    opacity: 0; transform: translateY(10px);
+    animation: sp-up 1s ease 3.1s forwards;
+  }
+  .sp-welcome-text {
+    font-size: 0.88rem; font-style: italic; color: #606060; line-height: 1.6; text-align: center;
+  }
+  .sp-tap {
+    font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.14em;
+    color: #333; opacity: 0;
+    animation: sp-fade 1s ease 4.2s forwards, sp-blink 2.2s ease-in-out 5.2s infinite;
+  }
+</style>
+</head>
+<body>
+<div id="splash">
+  <svg class="sp-ring-svg" viewBox="0 0 260 260" fill="none">
+    <!-- Background circle -->
+    <circle cx="130" cy="130" r="110" stroke="#161616" stroke-width="1.5"/>
+
+    <!-- Outer ring draws -->
+    <circle id="sp-outer-ring" cx="130" cy="130" r="110"
+      stroke="#22c55e" stroke-width="2" stroke-dasharray="10 6" stroke-linecap="round"/>
+
+    <!-- Inner ring draws -->
+    <circle id="sp-inner-ring" cx="130" cy="130" r="70"
+      stroke="#1c3a28" stroke-width="1.5" stroke-dasharray="5 9" stroke-linecap="round"/>
+
+    <!-- Thread arc from spool up to ring -->
+    <path id="sp-thread-arc"
+      d="M 130 119 Q 130 80 172 46"
+      stroke="#22c55e" stroke-width="1" stroke-linecap="round" opacity="0.5"/>
+
+    <!-- Motion path -->
+    <path id="sp-motion-path" d="M 130 20 A 110 110 0 1 1 129.99 20.001" stroke="none" fill="none"/>
+    <g id="sp-needle-group">
+      <animateMotion dur="2.8s" fill="freeze" calcMode="spline" keyTimes="0;1" keySplines="0.16,1,0.3,1">
+        <mpath href="#sp-motion-path"/>
+      </animateMotion>
+      <rect x="-2" y="-18" width="4" height="22" rx="2" fill="#d8d8d8"/>
+      <circle cx="0" cy="5" r="2" fill="#22c55e"/>
+      <path d="M0,5 L-1,12 L0,11.5 L1,12 Z" fill="#22c55e"/>
+    </g>
+
+    <!-- Spool -->
+    <g id="sp-spool-g">
+      <ellipse cx="130" cy="124" rx="24" ry="11" fill="#181818" stroke="#282828" stroke-width="1.5"/>
+      <rect x="106" y="124" width="48" height="12" fill="#181818"/>
+      <ellipse cx="130" cy="136" rx="24" ry="11" fill="#181818" stroke="#282828" stroke-width="1.5"/>
+      <g id="sp-spool-lines">
+        <ellipse cx="130" cy="130" rx="19" ry="9" fill="none" stroke="#22c55e" stroke-width="1.2" opacity="0.55"/>
+        <line x1="111" y1="130" x2="149" y2="130" stroke="#22c55e" stroke-width="1.2" opacity="0.35"/>
+      </g>
+      <ellipse cx="130" cy="124" rx="24" ry="11" fill="none" stroke="#303030" stroke-width="1"/>
+    </g>
+
+    <!-- Fabric strip at bottom of circle -->
+    <g id="sp-fabric-g">
+      <rect x="72" y="192" width="116" height="16" rx="3" fill="#181818" stroke="#252525" stroke-width="1"/>
+      <rect x="72" y="196" width="116" height="8" rx="2" fill="#1a1a1a"/>
+    </g>
+
+    <!-- Stitch line draws across fabric -->
+    <line id="sp-stitch" x1="78" y1="200" x2="198" y2="200"
+      stroke="#22c55e" stroke-width="1.5" stroke-linecap="round"
+      stroke-dasharray="6 4"/>
+
+    <!-- Marching stitch overlay -->
+    <line id="sp-stitch-march" x1="78" y1="200" x2="198" y2="200"
+      stroke="rgba(34,197,94,0.35)" stroke-width="1.5"
+      stroke-dasharray="6 4"/>
+  </svg>
+
+  <div class="sp-brand">
+    <div class="sp-brand-name">YoungStory</div>
+    <div class="sp-brand-sub">Bảng báo cáo sản xuất</div>
+  </div>
+  <div class="sp-welcome">
+    <div class="sp-welcome-text">Mỗi đường chỉ là một nỗ lực, mỗi sản phẩm là niềm tự hào.</div>
+  </div>
+  <div class="sp-tap">Chạm để bắt đầu</div>
+</div>
+<script>
+  document.getElementById('splash').addEventListener('click', function() {
+    this.classList.add('exit');
+  });
+</script>
+</body>
+</html>

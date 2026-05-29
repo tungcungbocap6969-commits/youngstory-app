@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Preview — Biểu đồ sản lượng Tổ 1</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0a0a0a;
+    color: #e5e7eb;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    padding: 1.5rem 1rem 3rem;
+  }
+  h1 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.25rem; }
+  .sub { font-size: 0.8rem; color: #6b7280; margin-bottom: 1.25rem; }
+
+  /* Legend */
+  .legend {
+    display: flex; gap: 1.25rem; margin-bottom: 1.25rem; flex-wrap: wrap;
+  }
+  .leg { display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; color: #9ca3af; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .dot-g { background: #22c55e; }
+  .dot-a { background: #f59e0b; }
+  .dot-r { background: #ef4444; }
+  .dot-avg { width: 20px; height: 2px; border-radius: 1px; background: rgba(255,255,255,0.3); border: none; border-top: 2px dashed rgba(255,255,255,0.3); }
+
+  /* Stats row */
+  .stats { display: flex; gap: 0.75rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .stat {
+    background: #111; border: 1px solid #1f1f1f; border-radius: 8px;
+    padding: 0.6rem 0.875rem; flex: 1; min-width: 100px;
+  }
+  .stat-l { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.1em; color: #6b7280; margin-bottom: 2px; }
+  .stat-v { font-size: 1.25rem; font-weight: 700; font-family: 'Courier New', monospace; }
+  .stat-v.green { color: #22c55e; }
+  .stat-v.amber { color: #f59e0b; }
+  .stat-v.red   { color: #ef4444; }
+
+  /* Chart wrapper */
+  .chart-outer {
+    background: #111;
+    border: 1px solid #1f1f1f;
+    border-radius: 10px;
+    padding: 1.25rem 1rem 1rem;
+    margin-bottom: 1rem;
+  }
+  .chart-scroll {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    cursor: grab;
+  }
+  .chart-scroll::-webkit-scrollbar { height: 6px; }
+  .chart-scroll::-webkit-scrollbar-track { background: #1a1a1a; border-radius: 3px; }
+  .chart-scroll::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+  .chart-inner { width: 4400px; height: 480px; position: relative; }
+
+  /* Tooltip override */
+  .note {
+    font-size: 0.72rem; color: #6b7280; text-align: center; margin-top: 0.5rem;
+  }
+
+  /* Alert list */
+  .alert-section { margin-top: 1.5rem; }
+  .alert-title { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #6b7280; margin-bottom: 0.625rem; }
+  .alert-list { display: flex; flex-direction: column; gap: 0.4rem; }
+  .alert-item {
+    background: #111; border-left: 3px solid #ef4444; border-radius: 0 6px 6px 0;
+    padding: 0.55rem 0.875rem;
+    display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;
+  }
+  .alert-item.amber { border-left-color: #f59e0b; }
+  .alert-proc { font-size: 0.84rem; color: #e5e7eb; flex: 1; }
+  .alert-qty  { font-family: monospace; font-size: 0.9rem; font-weight: 700; flex-shrink: 0; }
+  .alert-item          .alert-qty { color: #ef4444; }
+  .alert-item.amber    .alert-qty { color: #f59e0b; }
+</style>
+</head>
+<body>
+
+<h1>Biểu đồ sản lượng — Tổ 1</h1>
+<p class="sub">110 công đoạn theo thứ tự sản xuất · Dữ liệu mẫu minh hoạ · Cuộn ngang để xem toàn bộ</p>
+
+<div class="legend">
+  <div class="leg"><div class="dot dot-g"></div>Đạt sản lượng</div>
+  <div class="leg"><div class="dot dot-a"></div>Thấp (dưới 50% trung bình)</div>
+  <div class="leg"><div class="dot dot-r"></div>Chưa báo cáo / bằng 0</div>
+  <div class="leg"><div class="dot-avg"></div>Trung bình ngày</div>
+</div>
+
+<div class="stats" id="stats-row"></div>
+
+<div class="chart-outer">
+  <div class="chart-scroll" id="chartScroll">
+    <div class="chart-inner">
+      <canvas id="myChart" width="4400" height="480"></canvas>
+    </div>
+  </div>
+  <p class="note">← Kéo ngang để xem tất cả 110 công đoạn →</p>
+</div>
+
+<div class="alert-section">
+  <div class="alert-title">Công đoạn cần chú ý</div>
+  <div class="alert-list" id="alert-list"></div>
+</div>
+
+<script>
+// ── Danh sách 110 công đoạn Tổ 1 ──
+const PROCESSES = [
+  'Cắt nhám lông, nhám gai đầu cạp','Cắt nhám cạp sau x2','Cắt nhám nắp túi mông x2',
+  'Cắt nhám nắp túi trên, dưới x4','Cắt nhám miệng túi mông x2','Cắt nhám miệng túi trên, dưới x4',
+  'Cắt nhám cá x4','Cắt nhám cá may vào thân x4','Cắt dây gấu x2','Cắt dây cúc túi to x2',
+  'Cắt đỉa cạp x6','Cắt chun cạp x2','Cắt dây may nhám cạp x2','Cắt nhám dây cạp x2',
+  'Cắt dây treo quần x2','Cắt dây dằng túi x2','Cắt dây cố định đai x2','Cắt chun đai x2',
+  'SD Túi to','SD Túi trên','SD Túi dưới','SD Cạp','SD Chun đai',
+  'Chắp đũng sau, nc','Diễu đũng sau, nc','Chắp cầu mông, nc','Diễu cầu mông, nc',
+  'Quây cá x4, nc','Lộn, mí cá x4, nc','Gim cá vào ống quần x4, nc',
+  'Chắp thân sau trên vào ts dưới x2, nc','Diễu can ts trên ts dưới x2, nc',
+  'Dán túi trên vào thân trước x2, nc','May lộn miệng túi tròn x2, nc',
+  'Dán ốp trang trí túi tròn x2, nc','Bấm nhả, diễu miệng túi tròn 2k x2, nc',
+  'Mí đáp túi trong x2, nc','VS đáp túi trong x2, nc',
+  'VS 3c quây đáy túi lưới x2, nc','Lộn, diễu đáy túi lưới x2, nc',
+  'Chắp can lót gối 1k x2, nc','Chắp lộn 3 lá phối, lót gối x2, nc',
+  'May ốp phối gối x2, nc','Chiết ly, mí ly gối x2, nc','Chiết ly túi to x2, nc',
+  'Chắp đáp cạnh túi to','Mí đáp miệng túi to x2, nc','Kê mí đáp túi to x2, nc',
+  'Gập chặn miệng túi to x2, nc','Diễu miệng túi to x2, nc',
+  'May nhám miệng túi to, đặt dây cúc x2, nc','Đóng + may nắp túi + diễu nắp túi to x2, nc',
+  'Chặn chằng túi trong vào dọc quần x2, nc','Đóng túi + may diễu nắp túi trên x2, nc',
+  'Chiết ly túi trên x2, nc','Mí đáp miệng túi trên x2, nc','Kê mí đáp túi trên, nc',
+  'Gập chặn miệng túi trên x2, nc','Diễu miệng túi trên x2, nc','May nhám miệng túi trên',
+  'Chiết ly túi dưới x2, nc','Mí đáp miệng túi dưới x2, nc','Kê mí đáp túi dưới x2, nc',
+  'Gập chặn miệng túi dưới x2, nc','Diễu miệng túi dưới x2','May nhám miệng túi dưới x2, nc',
+  'Đóng túi + may diễu nắp túi dưới x2, nc','Diễu cá x2, nc',
+  'VS đáp túi to x2, nc','VS 3c túi to x2, nc','VS 3c túi trên x2, nc','VS 3c túi dưới x2, nc',
+  'Diễu dọc gối x2, nc','Can phối trên gối x2, nc','Diễu phối trên gối x2, nc',
+  'Chắp can gối vào ống dưới x2, nc','Diễu can gối x2, nc',
+  'Chắp can đũng, nc','Diễu can đũng trước, nc','Chắp dọc x2, nc','Diễu dọc x2, nc',
+  'Quây lộn đón moi, nc','Mí đón moi, nc','May đáp moi + mí + chắp đũng trước, nc',
+  'Tra khóa moi, nc','Diễu moi + đũng, nc','VS đũng trước x2, nc','VS đáp moi, nc',
+  'Chắp lót gối 5c x2, nc','VS 3c đầu lót gối x2, nc','Diễu lót gối x2, nc',
+  'Can đỉa','Kê đỉa','Chắp giàng 1k, nc','VS 3c giàng',
+  'Can nối cạp trong + cạp ngoài, đặt chun, đặt dây treo, nc',
+  'Đặt xốp diễu sống cạp, nc','May nhám vào chun cạp x2, nc','Chặn dây chun cạp x2, nc',
+  'Đặt đỉa, nc','Đặt mác, nc','May nhám vào dây nối chun quần, nc',
+  'Tra + mí chân cạp, nc','May trang trí cạp sau, nc','May nhám cạp sau, nc',
+  'May nhám đầu cạp, kéo khóa, nc','Chặn đỉa, nc',
+  'Can đáp gấu x2, nc','Can đáp gấu lót VS 5c x2, nc','Xỏ dây gấu + chốt x2',
+  'May gấu lót 2k x2, nc','Chắp gấu lót vào đáp gấu x2, nc',
+  'May cụm đáp vào gấu x2, nc','Mí đáp gấu x2, nc','Diễu gấu 2k x2, nc','Dập oze gấu x2',
+];
+
+// ── Dữ liệu mẫu minh hoạ (thực tế lấy từ Supabase) ──
+const MOCK = [
+  380,320,290,0,350,310,280,420,360,300,
+  340,0,280,320,360,290,0,380,420,350,
+  310,300,0,340,380,290,320,0,420,360,
+  280,310,350,0,390,320,290,380,0,340,
+  420,350,0,300,280,320,360,290,0,380,
+  350,420,310,0,290,320,380,350,280,0,
+  360,310,420,290,0,350,280,320,0,380,
+  310,420,0,350,290,360,280,0,320,380,
+  350,290,420,0,310,280,360,320,0,380,
+  290,350,310,420,0,280,360,320,350,0,
+  380,290,310,280,420,350,0,360,320,290,
+];
+
+// ── Tính thống kê ──
+const reported = MOCK.filter(v => v > 0);
+const avg    = reported.length ? Math.round(reported.reduce((a,b)=>a+b,0)/reported.length) : 0;
+const lowCut = avg * 0.5;
+const zeroes = MOCK.filter(v => v === 0).length;
+const lows   = MOCK.filter(v => v > 0 && v < lowCut).length;
+
+// Stats
+const statsEl = document.getElementById('stats-row');
+statsEl.innerHTML = [
+  { l:'Tổng công đoạn', v: PROCESSES.length, c:'green' },
+  { l:'Đã báo cáo',     v: reported.length,  c:'green' },
+  { l:'Chưa báo / 0',   v: zeroes,            c:'red'   },
+  { l:'Sản lượng thấp', v: lows,              c:'amber' },
+  { l:'Trung bình',     v: avg.toLocaleString('vi-VN'), c:'green' },
+].map(s=>
+  `<div class="stat"><div class="stat-l">${s.l}</div><div class="stat-v ${s.c}">${s.v}</div></div>`
+).join('');
+
+// ── Màu điểm theo giá trị ──
+function pointColor(v) {
+  if (v === 0)       return '#ef4444';
+  if (v < lowCut)    return '#f59e0b';
+  return '#22c55e';
+}
+
+const pointColors      = MOCK.map(pointColor);
+const pointBorderColors = pointColors;
+
+// ── Vẽ chart ──
+const canvas = document.getElementById('myChart');
+const ctx    = canvas.getContext('2d');
+
+// Gradient fill
+const grad = ctx.createLinearGradient(0, 0, 0, 480);
+grad.addColorStop(0,   'rgba(34,197,94,0.35)');
+grad.addColorStop(0.55,'rgba(245,158,11,0.12)');
+grad.addColorStop(1,   'rgba(239,68,68,0.02)');
+
+new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: PROCESSES.map((_, i) => i + 1),
+    datasets: [
+      {
+        label: 'Sản lượng',
+        data: MOCK,
+        borderColor: '#22c55e',
+        borderWidth: 1.8,
+        backgroundColor: grad,
+        fill: true,
+        tension: 0.35,
+        pointRadius: 4,
+        pointHoverRadius: 7,
+        pointBackgroundColor: pointColors,
+        pointBorderColor: pointBorderColors,
+        pointBorderWidth: 1.5,
+      },
+      {
+        label: 'Trung bình',
+        data: PROCESSES.map(() => avg),
+        borderColor: 'rgba(255,255,255,0.22)',
+        borderWidth: 1,
+        borderDash: [6, 4],
+        pointRadius: 0,
+        fill: false,
+        tension: 0,
+      },
+    ],
+  },
+  options: {
+    responsive: false,
+    maintainAspectRatio: false,
+    animation: { duration: 600 },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#1a1a1a',
+        borderColor: '#2a2a2a',
+        borderWidth: 1,
+        titleColor: '#9ca3af',
+        bodyColor: '#e5e7eb',
+        padding: 10,
+        callbacks: {
+          title: items => `#${items[0].dataIndex + 1}`,
+          label: item => {
+            if (item.datasetIndex === 1) return `Trung bình: ${avg}`;
+            const v = item.raw;
+            const name = PROCESSES[item.dataIndex];
+            const flag = v === 0 ? ' 🔴 Chưa báo' : v < lowCut ? ' 🟡 Thấp' : ' 🟢 Đạt';
+            return [`${name}`, `Sản lượng: ${v.toLocaleString('vi-VN')}${flag}`];
+          },
+        },
+      },
+    },
+    scales: {
+      x: {
+        ticks: {
+          color: '#4b5563',
+          font: { size: 9 },
+          maxRotation: 0,
+          autoSkip: false,
+        },
+        grid: { color: '#141414' },
+        title: {
+          display: true,
+          text: 'Thứ tự công đoạn →',
+          color: '#4b5563',
+          font: { size: 10 },
+          padding: { top: 4 },
+        },
+      },
+      y: {
+        beginAtZero: true,
+        ticks: { color: '#4b5563', font: { size: 10 } },
+        grid: { color: '#1a1a1a' },
+        title: {
+          display: true,
+          text: 'Sản lượng',
+          color: '#4b5563',
+          font: { size: 10 },
+        },
+      },
+    },
+  },
+});
+
+// ── Alert list ──
+const alerts = PROCESSES
+  .map((p, i) => ({ proc: p, qty: MOCK[i], idx: i }))
+  .filter(x => x.qty < lowCut)
+  .sort((a,b) => a.qty - b.qty);
+
+const alertList = document.getElementById('alert-list');
+alertList.innerHTML = alerts.map(x =>
+  `<div class="alert-item ${x.qty > 0 ? 'amber' : ''}">` +
+    `<span class="alert-proc">#${x.idx+1} ${x.proc}</span>` +
+    `<span class="alert-qty">${x.qty === 0 ? 'Chưa báo' : x.qty}</span>` +
+  `</div>`
+).join('');
+
+// Drag to scroll
+const scroll = document.getElementById('chartScroll');
+let isDown = false, startX, scrollLeft;
+scroll.addEventListener('mousedown', e => { isDown = true; startX = e.pageX - scroll.offsetLeft; scrollLeft = scroll.scrollLeft; scroll.style.cursor='grabbing'; });
+scroll.addEventListener('mouseleave', () => { isDown = false; scroll.style.cursor='grab'; });
+scroll.addEventListener('mouseup', () => { isDown = false; scroll.style.cursor='grab'; });
+scroll.addEventListener('mousemove', e => { if (!isDown) return; e.preventDefault(); const x = e.pageX - scroll.offsetLeft; scroll.scrollLeft = scrollLeft - (x - startX); });
+</script>
+</body>
+</html>
