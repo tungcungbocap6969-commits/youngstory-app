@@ -1,4 +1,4 @@
-const CACHE_NAME = 'xuong-sx-v19';
+const CACHE_NAME = 'xuong-sx-v20';
 const CORE_ASSETS = [
   '/',
   '/manifest.json',

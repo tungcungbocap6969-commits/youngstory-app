@@ -178,7 +178,7 @@ btnSubmit.addEventListener('click', async () => {
   try {
     // Gửi Supabase trước — nếu mất mạng sẽ throw ở đây
     const sbRow = await sb.insert({
-      worker_name: record.workerName,
+      worker_name: record.workerName.replace(/(?:^|\s)\S/g, c => c.toUpperCase()),
       team:        record.team,
       process:     record.process,
       quantity:    record.quantity,

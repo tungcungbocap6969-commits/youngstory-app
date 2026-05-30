@@ -76,7 +76,7 @@ const sb = {
   // Get reports for a specific worker on a specific date
   async getByWorkerDate(name, date) {
     const res = await fetch(
-      SUPABASE_URL + '/rest/v1/reports?worker_name=eq.' + encodeURIComponent(name) +
+      SUPABASE_URL + '/rest/v1/reports?worker_name=ilike.' + encodeURIComponent(name) +
       '&date=eq.' + date + '&order=timestamp.desc&limit=1000',
       { headers: _headers() }
     );
