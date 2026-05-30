@@ -133,7 +133,10 @@ document.getElementById('f-qty').addEventListener('input', function () {
 });
 
 // ── Submit ──
+let _submitting = false;
 btnSubmit.addEventListener('click', async () => {
+  if (_submitting) return;
+  _submitting = true;
   const worker  = nameInput.value.trim();
   const team    = teamDD.get();
   const process = mainDD.get().replace(/^\d+\.\s*/, ''); // bỏ "1. " trước khi lưu
@@ -206,5 +209,6 @@ btnSubmit.addEventListener('click', async () => {
     }, 4000);
   } finally {
     btnSubmit.disabled = false;
+    _submitting = false;
   }
 });

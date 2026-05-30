@@ -117,6 +117,7 @@ function _iconCard(id, iconType, iconColor, title, sub, dashed) {
       if (worker.id) sb.updateWorker(worker.id, { team }).catch(() => {});
     };
     if (typeof unlockForm === 'function') unlockForm(worker.name, worker.team);
+    if (typeof loadToday === 'function') loadToday();
     close();
   }
 
