@@ -6,9 +6,13 @@ let _editId = null;
 window.delReport = async function (id) {
   if (!confirm('Xóa báo cáo này?')) return;
   const record = await dbGetById(id);
-  await dbDel(id);
-  if (record && record.sbId) {
-    sb.del(record.sbId).catch(e => console.warn('Supabase del:', e));
+  if (record) {
+    // Record tồn tại local → xóa local + Supabase qua sbId
+    await dbDel(id);
+    if (record.sbId) await sb.del(record.sbId).catch(e => console.warn('Supabase del:', e));
+  } else {
+    // Không có local → id chính là Supabase ID
+    await sb.del(id).catch(e => console.warn('Supabase del:', e));
   }
   toast('Đã xóa bản ghi');
   loadToday();

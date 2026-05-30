@@ -1,8 +1,18 @@
 @echo off
 cd /d "c:\Users\tungc\OneDrive\Máy tính\app xưởng"
-git add .
-git commit -m "Deploy"
-git push
+
+for /f "delims=" %%i in ('powershell -command "((Select-String -Path sw.js -Pattern \"CACHE_NAME\").Line -split \"'\")[1]"') do set VERSION=%%i
+
 echo.
-echo === Da deploy xong! ===
+echo ================================
+echo   Dang deploy phien ban: %VERSION%
+echo ================================
+echo.
+
+git add .
+git commit -m "Deploy %VERSION%"
+git push
+
+echo.
+echo === Da deploy %VERSION% thanh cong! ===
 pause
