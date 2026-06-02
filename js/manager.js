@@ -47,7 +47,7 @@ let _cumulTeam  = '';
 window.switchTab = function (tab) {
   currentTab = tab;
 
-  ['today', 'cumul', 'absent', 'history'].forEach(id => {
+  ['today', 'absent', 'admin'].forEach(id => {
     document.getElementById('tab-' + id).classList.toggle('hidden', tab !== id);
     const nav = document.getElementById('nav-' + id);
     if (nav) nav.classList.toggle('active', tab === id);
@@ -62,19 +62,8 @@ window.switchTab = function (tab) {
     loadToday();
   } else if (tab === 'absent') {
     loadAbsent();
-  } else if (tab === 'history') {
-    const d = document.getElementById('m-date');
-    if (!d.value) d.value = mskDateStr();
-    loadHistory();
-  } else if (tab === 'cumul') {
-    const to   = document.getElementById('m-to');
-    const from = document.getElementById('m-from');
-    if (!to.value) to.value = mskDateStr();
-    if (!from.value) {
-      const base = new Date(to.value + 'T00:00:00Z');
-      from.value = new Date(base.getTime() - 13 * 86400000).toISOString().slice(0, 10);
-    }
-    loadCumulative();
+  } else if (tab === 'admin') {
+    loadAdmin();
   }
 };
 
@@ -95,15 +84,19 @@ function applyFilter(records, teamSelId) {
   return team ? records.filter(r => r.team === team) : records;
 }
 
-// ── Load hôm nay ──
+// ── Load hôm nay (hoặc ngày được chọn) ──
 async function loadToday() {
+  const dateInput = document.getElementById('m-date-today');
+  const date = dateInput.value || mskDateStr();
+  if (!dateInput.value) dateInput.value = mskDateStr();
+
   const errEl  = document.getElementById('m-error-today');
   const loadEl = document.getElementById('m-loading-today');
   errEl.style.display  = 'none';
   loadEl.style.display = 'block';
 
   try {
-    _todayRaw = await sb.getByDate(mskDateStr());
+    _todayRaw = await sb.getByDate(date);
     renderToday();
   } catch (e) {
     errEl.textContent   = 'Lỗi tải dữ liệu: ' + e.message;
@@ -114,15 +107,18 @@ async function loadToday() {
 }
 window.loadToday = loadToday;
 
-function renderToday() {
-  const records = applyFilter(_todayRaw, 'm-team-today');
-  const statsEl = document.getElementById('m-stats-today');
+const _ADMIN_TEAMS = new Set(['Tổ cắt', 'Đóng gói', 'Kiểm hàng']);
 
-  if (_todayRaw.length) statsEl.classList.remove('hidden');
+function renderToday() {
+  const nonAdmin = _todayRaw.filter(r => !_ADMIN_TEAMS.has(r.team));
+  const records  = applyFilter(nonAdmin, 'm-team-today');
+  const statsEl  = document.getElementById('m-stats-today');
+
+  if (nonAdmin.length) statsEl.classList.remove('hidden');
   else statsEl.classList.add('hidden');
 
   renderStats(records, 'm-count-today', 'm-total-today', 'm-workers-today');
-  renderFlowChart(_todayRaw, _flowTeam);
+  renderFlowChart(nonAdmin, _flowTeam);
   renderWorkerCards(records);
   renderProcessCards(records);
 }
@@ -740,13 +736,20 @@ window.loadAbsent = loadAbsent;
 
 function renderAbsent(allWorkers, todayRecs) {
   const teamSel = document.getElementById('m-team-absent').value;
-  const reportedNames = new Set(todayRecs.map(r => r.worker_name));
 
-  const absent = allWorkers.filter(w =>
-    !reportedNames.has(w.name) &&
+  // So sánh không phân biệt hoa thường
+  const reportedNames = new Set(todayRecs.map(r => r.worker_name?.toLowerCase().trim()));
+
+  // Loại admin teams ra khỏi tab Vắng
+  const nonAdminWorkers = allWorkers.filter(w => !_ADMIN_TEAMS.has(w.team));
+
+  const absent = nonAdminWorkers.filter(w =>
+    !reportedNames.has(w.name?.toLowerCase().trim()) &&
     (!teamSel || w.team === teamSel)
   );
-  const total  = teamSel ? allWorkers.filter(w => w.team === teamSel).length : allWorkers.length;
+  const total = teamSel
+    ? nonAdminWorkers.filter(w => w.team === teamSel).length
+    : nonAdminWorkers.length;
   const done   = total - absent.length;
 
   // Stats
@@ -790,13 +793,218 @@ document.getElementById('m-team-absent')?.addEventListener('change', loadAbsent)
 
 // ── Events ──
 document.getElementById('m-team-today').addEventListener('change', renderToday);
-document.getElementById('m-date').addEventListener('change', loadHistory);
+document.getElementById('m-date-today').addEventListener('change', loadToday);
+
+// ── Admin tab: Hành chính ──
+let _adminTeam = 'cat';
+
+document.getElementById('admin-team-chips').addEventListener('click', e => {
+  const btn = e.target.closest('[data-admin-team]');
+  if (!btn) return;
+  _adminTeam = btn.dataset.adminTeam;
+  document.querySelectorAll('[data-admin-team]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const ac = btn.querySelector('.admin-sel-icon')?.style.getPropertyValue('--ac');
+  if (ac) btn.style.setProperty('--ac', ac);
+  const groups = { cat: 'admin-group-cat', dong: 'admin-group-dong', kiem: 'admin-group-kiem' };
+  Object.entries(groups).forEach(([key, id]) => {
+    document.getElementById(id).style.display = (_adminTeam === key) ? '' : 'none';
+  });
+  loadAdmin();
+});
+
+// Set --ac trên từng card từ icon
+document.querySelectorAll('[data-admin-team]').forEach(btn => {
+  const ac = btn.querySelector('.admin-sel-icon')?.style.getPropertyValue('--ac');
+  if (ac) btn.style.setProperty('--ac', ac);
+});
+function renderAdminBar(containerId, orders) {
+  const wrap = document.getElementById(containerId);
+  if (!wrap) return;
+
+  wrap.innerHTML = orders.map(o => {
+    const ratio = o.total > 0 ? o.done / o.total : 0;
+    const over  = ratio > 1;
+    const pct   = Math.min(100, Math.round(ratio * 100));
+    const color = o.done === 0 ? 'zero'
+                : over         ? 'red'
+                : pct >= 75    ? 'green'
+                : pct >= 50    ? 'amber'
+                : pct >= 25    ? 'orange'
+                :                'blue';
+    const countText = over
+      ? `⚠ ${o.done}/${o.total}`
+      : `${o.done}/${o.total}`;
+    return `
+      <div class="admin-bar-wrap">
+        <div class="admin-bar-label">${esc(o.label)}</div>
+        <div class="admin-bar-track">
+          <div class="admin-bar-fill ${color}" style="width:0%" data-target="${pct}"></div>
+        </div>
+        <div class="admin-bar-count ${color}">${countText}</div>
+      </div>`;
+  }).join('');
+
+  // Tất cả bar chạy đồng loạt từ 0 → target
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    wrap.querySelectorAll('.admin-bar-fill[data-target]').forEach(el => {
+      el.style.width = el.dataset.target + '%';
+    });
+  }));
+}
+
+// Targets đơn hàng theo cỡ × thành phố
+const _ORDER = {
+  '46-2': [0,   20,  30],
+  '46-3': [0,   80,  120],
+  '46-4': [0,   40,  60],
+  '48-2': [0,   20,  30],
+  '48-3': [0,   120, 180],
+  '48-4': [0,   400, 600],
+  '48-5': [0,   60,  90],
+  '50-3': [500, 160, 240],
+  '50-4': [600, 520, 780],
+  '50-5': [0,   120, 180],
+  '50-6': [60,  0,   0],
+  '52-3': [320, 80,  49],
+  '52-4': [560, 260, 390],
+  '52-5': [139, 39,  59],
+  '52-6': [35,  0,   0],
+  '54-3': [100, 20,  30],
+  '54-4': [260, 40,  60],
+  '54-5': [80,  20,  30],
+  '54-6': [13,  0,   0],
+};
+const _SIZES = ['46-2','46-3','46-4','48-2','48-3','48-4','48-5',
+                '50-3','50-4','50-5','50-6','52-3','52-4','52-5','52-6',
+                '54-3','54-4','54-5','54-6'];
+
+function _addDays(dateStr, n) {
+  return new Date(new Date(dateStr + 'T12:00:00Z').getTime() + n * 86400000).toISOString().slice(0, 10);
+}
+
+async function loadAdmin() {
+  const date      = document.getElementById('m-date-today').value || mskDateStr();
+  const yesterday = _addDays(date, -1);
+  const weekAgo   = _addDays(date, -6);
+
+  const [all, range7] = await Promise.all([
+    sb.getByDate(date).catch(() => []),
+    sb.getRange(weekAgo, date).catch(() => []),
+  ]);
+
+  const adminRecs   = all.filter(r => _ADMIN_TEAMS.has(r.team));
+  const range7Admin = range7.filter(r => _ADMIN_TEAMS.has(r.team));
+
+  // Tổng hợp theo process
+  const sumBy = (team, procKey) => adminRecs
+    .filter(r => r.team === team && r.process === procKey)
+    .reduce((s, r) => s + (r.quantity || 0), 0);
+
+  // Tổ cắt: 1 bar / cỡ, target = tổng 3 TP
+  const CAT = _SIZES.map(sz => {
+    const t = _ORDER[sz];
+    const total = t[0] + t[1] + t[2];
+    if (!total) return null;
+    return { label: `Cỡ ${sz}`, done: sumBy('Tổ cắt', `Cỡ ${sz}`), total };
+  }).filter(Boolean);
+
+  // Kiểm hàng: giống Tổ cắt
+  const KIEM = _SIZES.map(sz => {
+    const t = _ORDER[sz];
+    const total = t[0] + t[1] + t[2];
+    if (!total) return null;
+    return { label: `Cỡ ${sz}`, done: sumBy('Kiểm hàng', `Cỡ ${sz}`), total };
+  }).filter(Boolean);
+
+  // Đóng gói: bar theo cỡ × TP (chỉ khi target > 0)
+  const TP = ['TP1','TP2','TP3'];
+  const DONG = [];
+  TP.forEach((tp, i) => {
+    _SIZES.forEach(sz => {
+      const total = _ORDER[sz][i];
+      if (!total) return;
+      DONG.push({ label: `Cỡ ${sz} · ${tp}`, done: sumBy('Đóng gói', `Cỡ ${sz} · ${tp}`), total });
+    });
+  });
+
+  renderAdminBar('admin-bars-cat',  CAT);
+  renderAdminBar('admin-bars-dong', DONG);
+  renderAdminBar('admin-bars-kiem', KIEM);
+
+  // Tính stats theo tổ đang chọn
+  const teamMap = { cat: 'Tổ cắt', dong: 'Đóng gói', kiem: 'Kiểm hàng' };
+  const teamKey  = _adminTeam === 'all' ? null : teamMap[_adminTeam];
+
+  function calcStats(team) {
+    const teamRecs7   = range7Admin.filter(r => r.team === team);
+    const teamToday   = adminRecs.filter(r => r.team === team);
+    const teamYest    = range7Admin.filter(r => r.team === team && r.date === yesterday);
+
+    const todayTotal = teamToday.reduce((s, r) => s + (r.quantity || 0), 0);
+    const yestTotal  = teamYest.reduce((s, r) => s + (r.quantity || 0), 0);
+
+    // TB/ngày từ 7 ngày
+    const byDate = {};
+    teamRecs7.forEach(r => { byDate[r.date] = (byDate[r.date] || 0) + (r.quantity || 0); });
+    const activeDays = Object.keys(byDate).length || 1;
+    const avg = Math.round(Object.values(byDate).reduce((s, v) => s + v, 0) / activeDays);
+
+    // Tổng target của team
+    const totalTarget = _SIZES.reduce((s, sz) => {
+      const t = _ORDER[sz];
+      return s + (team === 'Đóng gói' ? t[0] + t[1] + t[2] : t[0] + t[1] + t[2]);
+    }, 0);
+
+    // Tổng đã làm (7 ngày, xấp xỉ)
+    const totalDone7 = Object.values(byDate).reduce((s, v) => s + v, 0);
+    const remaining  = Math.max(0, totalTarget - totalDone7);
+    const daysLeft   = avg > 0 ? Math.ceil(remaining / avg) : null;
+    const etaDate    = daysLeft !== null ? _addDays(date, daysLeft) : null;
+
+    return { todayTotal, yestTotal, avg, daysLeft, etaDate };
+  }
+
+  function renderAdminStats(team) {
+    const s = calcStats(team);
+    const delta = s.todayTotal - s.yestTotal;
+    const sign  = delta >= 0 ? '+' : '';
+
+    document.getElementById('admin-avg').textContent = s.avg.toLocaleString();
+    document.getElementById('admin-avg-sub').textContent = '7 ngày gần nhất';
+
+    if (s.etaDate) {
+      const [y, m, d] = s.etaDate.split('-');
+      document.getElementById('admin-eta').textContent = `${d}/${m}/${y}`;
+      document.getElementById('admin-eta-sub').textContent = `còn ~${s.daysLeft} ngày`;
+    } else {
+      document.getElementById('admin-eta').textContent = '—';
+      document.getElementById('admin-eta-sub').textContent = 'chưa đủ dữ liệu';
+    }
+
+    const deltaEl = document.getElementById('admin-delta');
+    deltaEl.textContent = delta === 0 ? '= 0' : `${sign}${delta.toLocaleString()}`;
+    deltaEl.className   = 'admin-stat-value ' + (delta > 0 ? 'up' : delta < 0 ? 'down' : '');
+    document.getElementById('admin-delta-sub').textContent = `hôm qua: ${s.yestTotal.toLocaleString()}`;
+  }
+
+  if (teamKey) renderAdminStats(teamKey);
+
+  // Áp dụng filter hiện tại
+  const groups = { cat: 'admin-group-cat', dong: 'admin-group-dong', kiem: 'admin-group-kiem' };
+  Object.entries(groups).forEach(([key, id]) => {
+    document.getElementById(id).style.display = (_adminTeam === key) ? '' : 'none';
+  });
+
+  const now = new Date();
+  document.getElementById('admin-updated').textContent =
+    `Cập nhật ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+}
 
 // ── Init ──
 initFlowTeamChips();
 initMissTeamChips();
-initCumulTeamChips();
-document.getElementById('m-date').value = mskDateStr();
+document.getElementById('m-date-today').value = mskDateStr();
 loadToday();
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js')

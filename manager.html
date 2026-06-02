@@ -85,6 +85,10 @@
     <!-- Bộ lọc -->
     <div class="manage-filters">
       <div class="manage-filter-group">
+        <label>Ngày</label>
+        <input type="date" id="m-date-today" class="m-select">
+      </div>
+      <div class="manage-filter-group">
         <label>Tổ sản xuất</label>
         <select id="m-team-today" class="m-select">
           <option value="">Tất cả</option>
@@ -113,27 +117,6 @@
       </div>
     </div>
 
-    <!-- Biểu đồ công đoạn -->
-    <div class="form-card m-flow-card" id="m-flow-card">
-      <div class="form-card-title">Sản lượng theo tổ — hôm nay</div>
-
-      <!-- Chips chọn tổ -->
-      <div class="m-flow-teams" id="m-flow-teams"></div>
-
-      <!-- Legend -->
-      <div class="m-flow-legend">
-        <span class="m-leg"><span class="m-dot m-dot-g"></span>Đạt</span>
-        <span class="m-leg"><span class="m-dot m-dot-a"></span>Thấp</span>
-        <span class="m-leg"><span class="m-dot m-dot-r"></span>Chưa báo</span>
-        <span class="m-leg m-leg-avg">Trung bình</span>
-      </div>
-
-      <div class="m-flow-scroll" id="m-flow-scroll">
-        <canvas id="chart-flow"></canvas>
-      </div>
-      <p class="m-flow-hint">← Vuốt ngang để xem toàn bộ công đoạn →</p>
-    </div>
-
     <!-- Thẻ công nhân -->
     <div class="sec-header">
       <span class="sec-title">Công nhân hôm nay</span>
@@ -149,57 +132,6 @@
 
   </section>
 
-  <!-- ─── TAB: TÍCH LŨY ─── -->
-  <section id="tab-cumul" class="hidden">
-
-    <!-- Bộ lọc khoảng ngày -->
-    <div class="manage-filters">
-      <div class="manage-filter-group">
-        <label>Từ ngày</label>
-        <input type="date" id="m-from" class="m-select">
-      </div>
-      <div class="manage-filter-group">
-        <label>Đến ngày</label>
-        <input type="date" id="m-to" class="m-select">
-      </div>
-      <button class="m-refresh-btn" onclick="loadCumulative()">↻ Xem</button>
-    </div>
-
-    <!-- Trạng thái -->
-    <div class="m-error" id="m-error-cumul" style="display:none"></div>
-    <div class="m-loading" id="m-loading-cumul" style="display:none">Đang tính...</div>
-
-    <!-- Stats 3 cột -->
-    <div class="stats-row stats-three hidden" id="m-stats-cumul">
-      <div class="stat-card">
-        <div class="stat-label">C.đoạn đã báo</div>
-        <div class="stat-value" id="m-cumul-done">0</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Tổng sản lượng</div>
-        <div class="stat-value" id="m-cumul-total">0</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Chưa báo cáo</div>
-        <div class="stat-value stat-red" id="m-cumul-miss">0</div>
-      </div>
-    </div>
-
-    <!-- Chips chọn tổ -->
-    <div class="m-flow-teams" id="m-cumul-teams"></div>
-
-    <!-- Chú thích -->
-    <div class="m-notice cumul-notice">
-      <span class="m-notice-icon">ℹ️</span>
-      <span>Hiển thị <strong>sản lượng thô</strong> — chưa chuẩn hóa theo giây giờ.
-        Sản lượng thấp <strong>không đồng nghĩa</strong> với chậm tiến độ nếu công đoạn đó có giây giờ cao.
-        Màu <strong>đỏ</strong> chỉ đánh dấu công đoạn <strong>chưa có báo cáo nào</strong>.</span>
-    </div>
-
-    <!-- Danh sách công đoạn tích lũy -->
-    <div id="m-cumul-list"></div>
-
-  </section>
 
   <!-- ─── TAB: CHƯA BÁO CÁO ─── -->
   <section id="tab-absent" class="hidden">
@@ -240,71 +172,102 @@
 
   </section>
 
-  <!-- ─── TAB: LỊCH SỬ ─── -->
-  <section id="tab-history" class="hidden">
-
-    <!-- Bộ lọc ngày -->
-    <div class="manage-filters">
-      <div class="manage-filter-group" style="flex:1">
-        <label>Chọn ngày</label>
-        <input type="date" id="m-date" class="m-select" style="width:100%">
-      </div>
-      <button class="m-refresh-btn" onclick="loadHistory()">↻ Làm mới</button>
-    </div>
-
-    <!-- Trạng thái -->
-    <div class="m-error" id="m-error-hist" style="display:none"></div>
-    <div class="m-loading" id="m-loading-hist" style="display:none">Đang tải...</div>
-
-    <!-- Stats -->
-    <div class="stats-row stats-three hidden" id="m-stats-hist">
-      <div class="stat-card">
-        <div class="stat-label">Báo cáo</div>
-        <div class="stat-value" id="m-count-hist">0</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Tổng sản lượng</div>
-        <div class="stat-value" id="m-total-hist">0</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Công nhân</div>
-        <div class="stat-value" id="m-workers-hist">0</div>
+  <!-- ─── TAB: HÀNH CHÍNH ─── -->
+  <section id="tab-admin" class="hidden">
+    <div class="sec-header" style="margin-top:0.5rem">
+      <span class="sec-title">Tiến độ đơn hàng</span>
+      <div style="display:flex;align-items:center;gap:0.5rem">
+        <span class="sec-badge" id="admin-updated">—</span>
+        <button class="m-refresh-btn" onclick="loadAdmin()" style="margin:0">↻</button>
       </div>
     </div>
 
-    <!-- Xu hướng sản lượng 7 ngày -->
-    <div class="form-card m-chart-card" id="m-trend-card" style="display:none">
-      <div class="form-card-title">Xu hướng sản lượng 7 ngày</div>
-      <div class="m-chart-wrap"><canvas id="chart-trend"></canvas></div>
+    <!-- Stat cards -->
+    <div class="admin-stats" id="admin-stats">
+      <div class="admin-stat-card">
+        <div class="admin-stat-label">TB / ngày</div>
+        <div class="admin-stat-value" id="admin-avg">—</div>
+        <div class="admin-stat-sub" id="admin-avg-sub">7 ngày gần nhất</div>
+      </div>
+      <div class="admin-stat-card">
+        <div class="admin-stat-label">Dự kiến xong</div>
+        <div class="admin-stat-value" id="admin-eta">—</div>
+        <div class="admin-stat-sub" id="admin-eta-sub">dựa trên TB/ngày</div>
+      </div>
+      <div class="admin-stat-card">
+        <div class="admin-stat-label">So hôm qua</div>
+        <div class="admin-stat-value" id="admin-delta">—</div>
+        <div class="admin-stat-sub" id="admin-delta-sub">hôm qua: —</div>
+      </div>
     </div>
 
-    <!-- Sản lượng theo tổ -->
-    <div class="form-card m-chart-card" id="m-bar-card" style="display:none">
-      <div class="form-card-title">Sản lượng theo tổ</div>
-      <div class="m-chart-wrap"><canvas id="chart-bar"></canvas></div>
+    <!-- Chọn tổ -->
+    <div class="admin-selector" id="admin-team-chips">
+
+      <button class="admin-sel-card active" data-admin-team="cat">
+        <div class="admin-sel-icon" style="--ac:#3b82f6">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/>
+            <path d="M20 4L8.12 15.88M14.47 14.48L20 20M8.12 8.12L12 12"/>
+          </svg>
+        </div>
+        <span class="admin-sel-name">Tổ Cắt</span>
+      </button>
+
+      <button class="admin-sel-card" data-admin-team="kiem">
+        <div class="admin-sel-icon" style="--ac:#22c55e">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+          </svg>
+        </div>
+        <span class="admin-sel-name">Kiểm Hàng</span>
+      </button>
+
+      <button class="admin-sel-card" data-admin-team="dong">
+        <div class="admin-sel-icon" style="--ac:#f59e0b">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+          </svg>
+        </div>
+        <span class="admin-sel-name">Đóng Gói</span>
+      </button>
+
     </div>
 
-    <!-- Disclaimer -->
-    <div class="m-notice" id="m-notice-hist" style="display:none">
-      <span class="m-notice-icon">⚠️</span>
-      <span>Xếp hạng tính theo <strong>tổng sản lượng thô</strong> — chưa tính độ khó từng công đoạn. Dữ liệu định mức đang được cập nhật.</span>
+    <!-- Nhóm: Tổ cắt -->
+    <div class="admin-group" id="admin-group-cat">
+      <div class="admin-group-label">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121m0 5.758a3 3 0 10-4.243-4.243 3 3 0 004.243 4.243z"/>
+        </svg>
+        Tổ Cắt
+      </div>
+      <div class="admin-bars" id="admin-bars-cat"></div>
     </div>
 
-    <!-- Xếp hạng công nhân -->
-    <div class="sec-header">
-      <span class="sec-title">Xếp hạng công nhân</span>
-      <span class="sec-badge" id="m-lb-date">—</span>
+    <!-- Nhóm: Kiểm hàng -->
+    <div class="admin-group" id="admin-group-kiem">
+      <div class="admin-group-label">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        Kiểm Hàng
+      </div>
+      <div class="admin-bars" id="admin-bars-kiem"></div>
     </div>
-    <div id="m-leaderboard" class="m-lb-list"></div>
 
-    <!-- Công đoạn thường xuyên hụt -->
-    <div class="sec-header" style="margin-top:1.375rem">
-      <span class="sec-title">Công đoạn thường xuyên hụt</span>
-      <span class="sec-badge">7 ngày gần nhất</span>
+    <!-- Nhóm: Đóng gói -->
+    <div class="admin-group" id="admin-group-dong">
+      <div class="admin-group-label">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+        </svg>
+        Đóng Gói
+      </div>
+      <div class="admin-bars" id="admin-bars-dong"></div>
     </div>
-    <div class="m-miss-teams" id="m-miss-teams"></div>
-    <div id="m-missing-procs"></div>
 
+    <p class="admin-hint">Dữ liệu cập nhật mỗi khi mở tab</p>
   </section>
 
 </main>
@@ -320,26 +283,19 @@
     </svg>
     Hôm nay
   </button>
-  <button class="nav-btn" id="nav-cumul" onclick="switchTab('cumul')">
-    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path stroke-linecap="round" stroke-linejoin="round"
-        d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
-    </svg>
-    Tích lũy
-  </button>
-  <button class="nav-btn" id="nav-absent" onclick="switchTab('absent')">
+<button class="nav-btn" id="nav-absent" onclick="switchTab('absent')">
     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path stroke-linecap="round" stroke-linejoin="round"
         d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
     </svg>
     Vắng
   </button>
-  <button class="nav-btn" id="nav-history" onclick="switchTab('history')">
+  <button class="nav-btn" id="nav-admin" onclick="switchTab('admin')">
     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path stroke-linecap="round" stroke-linejoin="round"
-        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
     </svg>
-    Lịch sử
+    Hành chính
   </button>
 </nav>
 

@@ -16,6 +16,7 @@ TEAMS.forEach(t => {
     localStorage.setItem('selectedTeam', t);
     mainDD.updateList(getNumberedProcessList(t));
     mainDD.clear();
+    _showCityField(t === 'Đóng gói');
     if (window.pinUpdateTeam) window.pinUpdateTeam(t);
     setTimeout(() => {
       const el = document.getElementById('f-process');
@@ -65,6 +66,27 @@ const editDD = makeDropdownFrom(
   null
 );
 
+// ── City chips (chỉ hiện cho Đóng gói) ──
+let _selectedCity = '';
+const _fieldCity = document.getElementById('field-city');
+const _cityChips = document.querySelectorAll('#city-chips .team-chip-btn');
+
+_cityChips.forEach(btn => {
+  btn.addEventListener('click', () => {
+    _selectedCity = btn.dataset.city;
+    _cityChips.forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+  });
+});
+
+function _showCityField(show) {
+  _fieldCity.classList.toggle('hidden', !show);
+  if (!show) {
+    _selectedCity = '';
+    _cityChips.forEach(b => b.classList.remove('selected'));
+  }
+}
+
 // ── Persistence: tên và tổ ──
 const nameInput = document.getElementById('f-name');
 nameInput.value = localStorage.getItem('workerName') || '';
@@ -90,6 +112,7 @@ window.unlockForm = function (name, team) {
     teamDD.set(team);
     mainDD.updateList(getNumberedProcessList(team));
     localStorage.setItem('selectedTeam', team);
+    _showCityField(team === 'Đóng gói');
   }
 
   const switchBtn = document.getElementById('pin-switch-user');
@@ -145,14 +168,17 @@ btnSubmit.addEventListener('click', async () => {
   if (!worker)        { toast('Vui lòng nhập họ tên'); return; }
   if (!team)          { toast('Vui lòng chọn tổ sản xuất'); return; }
   if (!process)       { toast('Vui lòng chọn công đoạn'); return; }
+  if (team === 'Đóng gói' && !_selectedCity) { toast('Vui lòng chọn thành phố'); return; }
   if (!qty || qty < 1) { toast('Vui lòng nhập sản lượng hợp lệ'); return; }
+
+  const fullProcess = team === 'Đóng gói' ? `${process} · ${_selectedCity}` : process;
 
   localStorage.setItem('workerName', worker);
 
   const record = {
     workerName: worker,
     team,
-    process,
+    process: fullProcess,
     quantity: qty,
     date:      mskDateStr(),
     timestamp: new Date().toISOString(),
@@ -176,6 +202,23 @@ btnSubmit.addEventListener('click', async () => {
   btnSubmit.disabled = true;
 
   try {
+    // Kiểm tra trùng lặp trước khi gửi
+    const isDup = await sb.checkDuplicate(worker, fullProcess, qty);
+    if (isDup) {
+      if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
+      btnSubmit.classList.add('error');
+      void btnSubmit.offsetWidth;
+      btnSubmit.classList.add('shake');
+      btnSubmit.addEventListener('animationend', () => btnSubmit.classList.remove('shake'), { once: true });
+      submitErrorEl.textContent = '⚠ Bạn đã báo cáo công đoạn này hôm nay rồi.';
+      submitErrorEl.classList.remove('hidden');
+      setTimeout(() => {
+        btnSubmit.classList.remove('error');
+        submitErrorEl.classList.add('hidden');
+      }, 4000);
+      return;
+    }
+
     // Gửi Supabase trước — nếu mất mạng sẽ throw ở đây
     const sbRow = await sb.insert({
       worker_name: record.workerName.replace(/(?:^|\s)\S/g, c => c.toUpperCase()),
