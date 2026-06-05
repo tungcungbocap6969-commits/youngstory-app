@@ -65,8 +65,18 @@ function initUpdateBanner() {
     });
   });
 
-  // Khi SW mới được kích hoạt → tải lại trang
+  // Khi SW mới được kích hoạt → tải lại trang để nhận bản mới NGAY trong lần mở này.
+  // Chốt an toàn: nếu công nhân đang gõ dở (đã nhập sản lượng), KHÔNG reload đột ngột
+  // mà hiện banner để họ tự bấm cập nhật khi xong → tránh mất dữ liệu đang nhập.
+  let _reloading = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (_reloading) return;
+    const qty = document.getElementById('f-qty');
+    if (qty && qty.value.trim() !== '') {
+      banner.classList.add('show'); // đang gõ dở → chỉ báo, không reload
+      return;
+    }
+    _reloading = true;
     window.location.reload();
   });
 
