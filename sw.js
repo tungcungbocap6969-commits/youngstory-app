@@ -1,4 +1,4 @@
-const CACHE_NAME = 'xuong-sx-v23';
+const CACHE_NAME = 'xuong-sx-v24';
 
 // Toàn bộ "vỏ" app — precache để mở tức thì VÀ đảm bảo nhận bản mới sau mỗi deploy.
 const CORE_ASSETS = [

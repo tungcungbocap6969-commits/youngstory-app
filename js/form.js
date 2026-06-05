@@ -203,8 +203,8 @@ btnSubmit.addEventListener('click', async () => {
 
   try {
     // Kiểm tra trùng lặp trước khi gửi
-    const isDup = await sb.checkDuplicate(worker, fullProcess, qty);
-    if (isDup) {
+    const existing = await sb.findRecent(worker, fullProcess, qty);
+    if (existing) {
       if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
       btnSubmit.classList.add('error');
       void btnSubmit.offsetWidth;
@@ -239,6 +239,22 @@ btnSubmit.addEventListener('click', async () => {
     loadToday();
   } catch (e) {
     console.error(e);
+
+    // Có thể server ĐÃ nhận báo cáo nhưng phản hồi bị mất do mạng chập chờn.
+    // Hỏi lại server: nếu báo cáo thực sự đã lên → coi như thành công (lưu local + báo thành công).
+    try {
+      const landed = await sb.findRecent(worker, fullProcess, qty);
+      if (landed) {
+        await dbAdd({ ...record, sbId: landed.id });
+        confetti();
+        toast('Đã gửi báo cáo thành công! 🎉');
+        mainDD.clear();
+        document.getElementById('f-qty').value = '';
+        loadToday();
+        return; // thực sự đã thành công → không hiện lỗi
+      }
+    } catch (_) { /* không xác minh được → rơi xuống báo lỗi mạng bên dưới */ }
+
     if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
     btnSubmit.classList.add('error');
     void btnSubmit.offsetWidth; // reset animation

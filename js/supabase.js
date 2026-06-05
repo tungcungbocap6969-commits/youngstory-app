@@ -73,19 +73,21 @@ const sb = {
     return res.json();
   },
 
-  // Kiểm tra báo cáo trùng trong vòng 2 giờ (cùng tên + công đoạn + sản lượng)
-  async checkDuplicate(workerName, process, quantity) {
+  // Tìm báo cáo trùng gần đây (cùng tên + công đoạn + sản lượng, trong 2 giờ).
+  // Trả về DÒNG dữ liệu (có id) nếu tìm thấy, ngược lại null. Dùng cho cả việc
+  // chống trùng trước khi gửi VÀ xác minh lại khi nghi mất kết nối sau khi đã gửi.
+  async findRecent(workerName, process, quantity) {
     const since = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
     const res = await fetch(
       SUPABASE_URL + '/rest/v1/reports?worker_name=ilike.' + encodeURIComponent(workerName) +
       '&process=eq.' + encodeURIComponent(process) +
       '&quantity=eq.' + quantity +
-      '&timestamp=gte.' + encodeURIComponent(since) + '&limit=1',
+      '&timestamp=gte.' + encodeURIComponent(since) + '&order=timestamp.desc&limit=1',
       { headers: _headers() }
     );
-    if (!res.ok) return false;
+    if (!res.ok) return null;
     const rows = await res.json();
-    return rows.length > 0;
+    return rows.length ? rows[0] : null;
   },
 
   // Get reports for a specific worker on a specific date
