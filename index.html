@@ -7,10 +7,10 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="YoungStory">
-  <meta name="description" content="Báo cáo sản lượng hàng ngày cho công nhân xưởng">
+  <meta name="description" content="BÃ¡o cÃ¡o sáº£n lÆ°á»£ng hÃ ng ngÃ y cho cÃ´ng nhÃ¢n xÆ°á»Ÿng">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <title>YoungStory — Báo cáo sản lượng</title>
+  <title>YoungStory â€” BÃ¡o cÃ¡o sáº£n lÆ°á»£ng</title>
 
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/layout.css">
@@ -20,7 +20,7 @@
 </head>
 <body>
 
-<!-- ═══════════════════ SPLASH ═══════════════════ -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• SPLASH â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 <div id="splash">
   <svg class="sp-ring-svg" viewBox="0 0 260 260" fill="none">
     <circle cx="130" cy="130" r="110" stroke="#161616" stroke-width="1.5"/>
@@ -55,43 +55,43 @@
   </svg>
   <div class="sp-brand">
     <div class="sp-brand-name">YoungStory</div>
-    <div class="sp-brand-sub">Bảng báo cáo sản xuất</div>
-    <div class="sp-version">v20</div>
+    <div class="sp-brand-sub">Báº£ng bÃ¡o cÃ¡o sáº£n xuáº¥t</div>
+    <div class="sp-version">v22</div>
   </div>
   <div class="sp-welcome">
     <div class="sp-welcome-text" id="sp-welcome-text"></div>
   </div>
-  <div class="sp-tap">Chạm để bắt đầu</div>
+  <div class="sp-tap">Cháº¡m Ä‘á»ƒ báº¯t Ä‘áº§u</div>
 </div>
 
-<!-- ═══════════════════ PIN SCREEN ═══════════════════ -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• PIN SCREEN â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 <div id="pin-screen">
   <div class="pin-header">
     <div class="header-brand">
       <span class="brand-label">YoungStory</span>
-      <span class="brand-title">Bảng báo cáo sản xuất</span>
+      <span class="brand-title">Báº£ng bÃ¡o cÃ¡o sáº£n xuáº¥t</span>
     </div>
     <div class="clock-widget">
       <div class="clock-time" id="pin-clock">--:--:--</div>
-      <div class="clock-label">Moscow · MSK</div>
+      <div class="clock-label">Moscow Â· MSK</div>
     </div>
   </div>
 
-  <!-- Chọn tài khoản -->
+  <!-- Chá»n tÃ i khoáº£n -->
   <div id="pin-picker">
-    <p class="pin-title">Chọn tài khoản</p>
+    <p class="pin-title">Chá»n tÃ i khoáº£n</p>
     <p class="pin-picker-subtitle" id="pin-picker-subtitle"></p>
     <div class="pin-picker-grid" id="pin-picker-grid"></div>
   </div>
 
-  <!-- Nhập PIN (sau khi chọn tài khoản) -->
+  <!-- Nháº­p PIN (sau khi chá»n tÃ i khoáº£n) -->
   <div id="pin-entry" class="hidden">
-    <button class="pin-back" id="pin-back-entry">← Quay lại</button>
+    <button class="pin-back" id="pin-back-entry">â† Quay láº¡i</button>
     <div class="pin-entry-avatar-wrap">
       <div class="pin-entry-avatar" id="pin-entry-avatar">?</div>
       <p class="pin-entry-name" id="pin-entry-name"></p>
     </div>
-    <p class="pin-title">Nhập mã PIN</p>
+    <p class="pin-title">Nháº­p mÃ£ PIN</p>
     <div class="pin-dots-wrap" id="pin-dots-entry">
       <div class="pin-dot" id="pd-0"></div>
       <div class="pin-dot" id="pd-1"></div>
@@ -102,22 +102,22 @@
     <div class="pin-numpad" id="pin-numpad-entry"></div>
   </div>
 
-  <!-- Đăng ký -->
+  <!-- ÄÄƒng kÃ½ -->
   <div id="pin-register" class="hidden">
-    <button class="pin-back" id="pin-back-btn">← Quay lại</button>
-    <p class="pin-title">Tạo tài khoản</p>
+    <button class="pin-back" id="pin-back-btn">â† Quay láº¡i</button>
+    <p class="pin-title">Táº¡o tÃ i khoáº£n</p>
     <div class="pin-reg-form">
       <div class="pin-reg-field">
-        <label>Họ và tên</label>
-        <input type="text" id="reg-name" autocomplete="off" autocapitalize="words" placeholder="Nhập tên của bạn...">
+        <label>Há» vÃ  tÃªn</label>
+        <input type="text" id="reg-name" autocomplete="off" autocapitalize="words" placeholder="Nháº­p tÃªn cá»§a báº¡n...">
       </div>
       <div class="pin-reg-field">
-        <label>Tổ sản xuất</label>
+        <label>Tá»• sáº£n xuáº¥t</label>
         <div class="pin-team-chips" id="reg-teams"></div>
       </div>
     </div>
     <input type="hidden" id="reg-team-val">
-    <p class="pin-field-label" id="reg-pin-label">Đặt mã PIN (4 số)</p>
+    <p class="pin-field-label" id="reg-pin-label">Äáº·t mÃ£ PIN (4 sá»‘)</p>
     <div class="pin-dots-wrap" id="pin-dots-reg">
       <div class="pin-dot" id="rpd-0"></div>
       <div class="pin-dot" id="rpd-1"></div>
@@ -129,136 +129,136 @@
   </div>
 </div>
 
-<!-- ═══════════════════ HEADER ═══════════════════ -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• HEADER â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 <header class="header">
   <div class="header-brand">
     <span class="brand-label">YoungStory</span>
-    <span class="brand-title">Bảng báo cáo sản xuất</span>
+    <span class="brand-title">Báº£ng bÃ¡o cÃ¡o sáº£n xuáº¥t</span>
   </div>
   <div class="clock-widget">
     <div class="clock-time" id="msk-clock">--:--:--</div>
-    <div class="clock-label">Moscow · MSK</div>
+    <div class="clock-label">Moscow Â· MSK</div>
   </div>
 </header>
 
-<!-- ═══════════════════ UPDATE BANNER ═══════════════════ -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• UPDATE BANNER â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 <div class="update-banner" id="update-banner">
-  <span class="upd-text">⬇ Có phiên bản mới!</span>
-  <button class="upd-btn" id="update-btn">Cập nhật ngay</button>
+  <span class="upd-text">â¬‡ CÃ³ phiÃªn báº£n má»›i!</span>
+  <button class="upd-btn" id="update-btn">Cáº­p nháº­t ngay</button>
 </div>
 
-<!-- ═══════════════════ MAIN ═══════════════════ -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• MAIN â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 <main class="main">
 
   <!-- Install banner -->
   <div class="install-banner" id="install-banner">
     <div class="install-text">
-      <strong>Cài đặt ứng dụng</strong>
-      <span>Thêm vào màn hình chính để dùng offline</span>
+      <strong>CÃ i Ä‘áº·t á»©ng dá»¥ng</strong>
+      <span>ThÃªm vÃ o mÃ n hÃ¬nh chÃ­nh Ä‘á»ƒ dÃ¹ng offline</span>
     </div>
-    <button class="btn-install" id="install-btn">Cài đặt</button>
+    <button class="btn-install" id="install-btn">CÃ i Ä‘áº·t</button>
   </div>
 
-  <!-- ─── TAB: BÁO CÁO ─── -->
+  <!-- â”€â”€â”€ TAB: BÃO CÃO â”€â”€â”€ -->
   <section id="tab-report">
 
     <div class="status-banner waiting" id="status-banner">
       <div class="status-dot"></div>
       <div class="status-body">
-        <div class="s-title" id="s-title">Đang tải...</div>
+        <div class="s-title" id="s-title">Äang táº£i...</div>
         <div class="s-detail" id="s-detail"></div>
       </div>
     </div>
 
     <div class="stats-row hidden" id="stats-row">
       <div class="stat-card">
-        <div class="stat-label">Báo cáo hôm nay</div>
+        <div class="stat-label">BÃ¡o cÃ¡o hÃ´m nay</div>
         <div class="stat-value" id="stat-count">0</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">Tổng sản lượng</div>
+        <div class="stat-label">Tá»•ng sáº£n lÆ°á»£ng</div>
         <div class="stat-value" id="stat-total">0</div>
       </div>
     </div>
 
     <div class="form-card" id="form-card">
-      <div class="form-card-title">Nhập báo cáo ca hôm nay</div>
+      <div class="form-card-title">Nháº­p bÃ¡o cÃ¡o ca hÃ´m nay</div>
 
       <div class="field">
         <div class="field-label-row">
-          <label for="f-name">Họ và tên</label>
+          <label for="f-name">Há» vÃ  tÃªn</label>
           <button type="button" class="pin-switch-btn" id="pin-switch-user"
-                  style="display:none" onclick="location.reload()">Đổi người dùng</button>
+                  style="display:none" onclick="location.reload()">Äá»•i ngÆ°á»i dÃ¹ng</button>
         </div>
-        <input type="text" id="f-name" placeholder="Ví dụ: Nguyễn Văn A"
+        <input type="text" id="f-name" placeholder="VÃ­ dá»¥: Nguyá»…n VÄƒn A"
                autocomplete="name" autocapitalize="words" inputmode="text">
       </div>
 
       <div class="field">
-        <label>Tổ sản xuất</label>
+        <label>Tá»• sáº£n xuáº¥t</label>
         <div class="team-chips" id="team-chips"></div>
       </div>
 
       <div class="field">
-        <label>Công đoạn</label>
+        <label>CÃ´ng Ä‘oáº¡n</label>
         <div class="dd-wrap">
           <input type="text" id="f-process" class="dd-input dd-inline"
-                 placeholder="Tìm hoặc chọn công đoạn…"
+                 placeholder="TÃ¬m hoáº·c chá»n cÃ´ng Ä‘oáº¡nâ€¦"
                  autocomplete="off" autocorrect="off" spellcheck="false">
           <div class="dd-list" id="dd-main"></div>
         </div>
       </div>
 
-      <!-- Chọn thành phố — chỉ hiện cho Đóng gói -->
+      <!-- Chá»n thÃ nh phá»‘ â€” chá»‰ hiá»‡n cho ÄÃ³ng gÃ³i -->
       <div class="field hidden" id="field-city">
-        <label>Thành phố</label>
+        <label>ThÃ nh phá»‘</label>
         <div class="team-chips" id="city-chips">
-          <button type="button" class="team-chip-btn" data-city="TP1">TP1 · УЦ Петровское</button>
-          <button type="button" class="team-chip-btn" data-city="TP2">TP2 · УЦ Березовка</button>
-          <button type="button" class="team-chip-btn" data-city="TP3">TP3 · УЦ Оренбург</button>
+          <button type="button" class="team-chip-btn" data-city="TP1">TP1 Â· Ð£Ð¦ ÐŸÐµÑ‚Ñ€Ð¾Ð²ÑÐºÐ¾Ðµ</button>
+          <button type="button" class="team-chip-btn" data-city="TP2">TP2 Â· Ð£Ð¦ Ð‘ÐµÑ€ÐµÐ·Ð¾Ð²ÐºÐ°</button>
+          <button type="button" class="team-chip-btn" data-city="TP3">TP3 Â· Ð£Ð¦ ÐžÑ€ÐµÐ½Ð±ÑƒÑ€Ð³</button>
         </div>
       </div>
 
       <div class="field">
-        <label for="f-qty">Sản lượng (số lượng)</label>
+        <label for="f-qty">Sáº£n lÆ°á»£ng (sá»‘ lÆ°á»£ng)</label>
         <input type="number" id="f-qty" placeholder="0"
                inputmode="numeric" min="1" max="99999">
       </div>
 
-      <button class="btn-submit" id="btn-submit">Gửi báo cáo</button>
+      <button class="btn-submit" id="btn-submit">Gá»­i bÃ¡o cÃ¡o</button>
       <p class="submit-error hidden" id="submit-error"></p>
     </div>
 
     <div class="sec-header">
-      <span class="sec-title">Báo cáo hôm nay</span>
-      <span class="sec-badge" id="today-badge">0 bản ghi</span>
+      <span class="sec-title">BÃ¡o cÃ¡o hÃ´m nay</span>
+      <span class="sec-badge" id="today-badge">0 báº£n ghi</span>
     </div>
     <div class="cards" id="today-cards"></div>
 
   </section>
 
-  <!-- ─── TAB: LỊCH SỬ ─── -->
+  <!-- â”€â”€â”€ TAB: Lá»ŠCH Sá»¬ â”€â”€â”€ -->
   <section id="tab-history" class="hidden">
 
     <div class="date-wrap">
-      <label for="hist-date">Chọn ngày</label>
+      <label for="hist-date">Chá»n ngÃ y</label>
       <input type="date" id="hist-date">
     </div>
 
     <div class="hist-stats hidden" id="hist-stats">
       <div class="stat-card">
-        <div class="stat-label">Số báo cáo</div>
+        <div class="stat-label">Sá»‘ bÃ¡o cÃ¡o</div>
         <div class="stat-value" id="hs-count">0</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">Tổng sản lượng</div>
+        <div class="stat-label">Tá»•ng sáº£n lÆ°á»£ng</div>
         <div class="stat-value" id="hs-total">0</div>
       </div>
     </div>
 
     <div class="sec-header">
-      <span class="sec-title" id="hist-sec-title">Lịch sử</span>
-      <span class="sec-badge" id="hist-badge">0 bản ghi</span>
+      <span class="sec-title" id="hist-sec-title">Lá»‹ch sá»­</span>
+      <span class="sec-badge" id="hist-badge">0 báº£n ghi</span>
     </div>
     <div class="cards" id="hist-cards"></div>
 
@@ -266,7 +266,7 @@
 
 </main>
 
-<!-- ═══════════════════ BOTTOM NAV ═══════════════════ -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• BOTTOM NAV â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 <nav class="bottom-nav">
   <button class="nav-btn active" id="nav-report" onclick="switchTab('report')">
     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -275,64 +275,64 @@
            M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2
            m-6 9l2 2 4-4"/>
     </svg>
-    Báo cáo
+    BÃ¡o cÃ¡o
   </button>
   <button class="nav-btn" id="nav-history" onclick="switchTab('history')">
     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path stroke-linecap="round" stroke-linejoin="round"
         d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
     </svg>
-    Lịch sử
+    Lá»‹ch sá»­
   </button>
 </nav>
 
-<!-- ═══════════════════ EDIT MODAL ═══════════════════ -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• EDIT MODAL â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 <div class="overlay" id="edit-overlay">
-  <div class="modal" role="dialog" aria-modal="true" aria-label="Chỉnh sửa báo cáo">
-    <div class="modal-title">Chỉnh sửa báo cáo</div>
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Chá»‰nh sá»­a bÃ¡o cÃ¡o">
+    <div class="modal-title">Chá»‰nh sá»­a bÃ¡o cÃ¡o</div>
 
     <div class="field">
-      <label for="e-name">Họ và tên</label>
+      <label for="e-name">Há» vÃ  tÃªn</label>
       <input type="text" id="e-name" autocomplete="name">
     </div>
 
     <div class="field">
-      <label>Tổ sản xuất</label>
+      <label>Tá»• sáº£n xuáº¥t</label>
       <div class="dd-wrap">
         <input type="text" id="e-team" class="dd-input dd-inline"
-               placeholder="Chọn tổ…"
+               placeholder="Chá»n tá»•â€¦"
                autocomplete="off" autocorrect="off" spellcheck="false">
         <div class="dd-list" id="dd-edit-team"></div>
       </div>
     </div>
 
     <div class="field">
-      <label>Công đoạn</label>
+      <label>CÃ´ng Ä‘oáº¡n</label>
       <div id="e-chip-wrap"></div>
       <div class="dd-wrap">
         <input type="text" id="e-process" class="dd-input"
-               placeholder="Tìm hoặc chọn công đoạn…"
+               placeholder="TÃ¬m hoáº·c chá»n cÃ´ng Ä‘oáº¡nâ€¦"
                autocomplete="off" autocorrect="off" spellcheck="false">
         <div class="dd-list" id="dd-edit"></div>
       </div>
     </div>
 
     <div class="field">
-      <label for="e-qty">Sản lượng</label>
+      <label for="e-qty">Sáº£n lÆ°á»£ng</label>
       <input type="number" id="e-qty" inputmode="numeric" min="1" max="99999">
     </div>
 
     <div class="modal-actions">
-      <button class="btn-secondary" onclick="closeModal()">Hủy</button>
-      <button class="btn-primary" onclick="saveEdit()">Lưu thay đổi</button>
+      <button class="btn-secondary" onclick="closeModal()">Há»§y</button>
+      <button class="btn-primary" onclick="saveEdit()">LÆ°u thay Ä‘á»•i</button>
     </div>
   </div>
 </div>
 
-<!-- ═══════════════════ TOAST ═══════════════════ -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• TOAST â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<!-- ═══════════════════ SCRIPTS (thứ tự quan trọng) ═══════════════════ -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• SCRIPTS (thá»© tá»± quan trá»ng) â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 <script src="js/config.js"></script>
 <script src="js/db.js"></script>
 <script src="js/time.js"></script>

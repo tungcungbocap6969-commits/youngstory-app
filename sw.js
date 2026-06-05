@@ -1,4 +1,4 @@
-const CACHE_NAME = 'xuong-sx-v21';
+const CACHE_NAME = 'xuong-sx-v22';
 const CORE_ASSETS = [
   '/',
   '/manifest.json',
@@ -14,7 +14,7 @@ self.addEventListener('install', event => {
       );
     })
   );
-  self.skipWaiting(); // Tá»± Ä‘á»™ng kÃ­ch hoáº¡t ngay, khÃ´ng cáº§n user báº¥m
+  self.skipWaiting(); // TÃ¡Â»Â± Ã„â€˜Ã¡Â»â„¢ng kÃƒÂ­ch hoÃ¡ÂºÂ¡t ngay, khÃƒÂ´ng cÃ¡ÂºÂ§n user bÃ¡ÂºÂ¥m
 });
 
 self.addEventListener('activate', event => {
@@ -31,13 +31,13 @@ self.addEventListener('activate', event => {
 function isStaticAsset(url) {
   const u = new URL(url);
   if (u.origin !== self.location.origin) return false;
-  if (u.pathname === '/clear.html') return false; // khÃ´ng cache trang reset
+  if (u.pathname === '/clear.html') return false; // khÃƒÂ´ng cache trang reset
   return /\.(html|css|js|png|jpg|svg|json|woff2?)$/.test(u.pathname);
 }
 
-// Network-first: cÃ³ máº¡ng â†’ luÃ´n láº¥y báº£n má»›i nháº¥t tá»« server vÃ  cáº­p nháº­t cache;
-// máº¥t máº¡ng â†’ fallback vá» cache Ä‘Ã£ lÆ°u. Nhá» váº­y má»—i láº§n deploy lÃ  mÃ¡y nháº­n ngay,
-// khÃ´ng phá»¥ thuá»™c vÃ o viá»‡c nhá»› bump cache name.
+// Network-first: cÃƒÂ³ mÃ¡ÂºÂ¡ng Ã¢â€ â€™ luÃƒÂ´n lÃ¡ÂºÂ¥y bÃ¡ÂºÂ£n mÃ¡Â»â€ºi nhÃ¡ÂºÂ¥t tÃ¡Â»Â« server vÃƒÂ  cÃ¡ÂºÂ­p nhÃ¡ÂºÂ­t cache;
+// mÃ¡ÂºÂ¥t mÃ¡ÂºÂ¡ng Ã¢â€ â€™ fallback vÃ¡Â»Â cache Ã„â€˜ÃƒÂ£ lÃ†Â°u. NhÃ¡Â»Â vÃ¡ÂºÂ­y mÃ¡Â»â€”i lÃ¡ÂºÂ§n deploy lÃƒÂ  mÃƒÂ¡y nhÃ¡ÂºÂ­n ngay,
+// khÃƒÂ´ng phÃ¡Â»Â¥ thuÃ¡Â»â„¢c vÃƒÂ o viÃ¡Â»â€¡c nhÃ¡Â»â€º bump cache name.
 function networkFirst(request, cacheKey) {
   const key = cacheKey || request;
   return fetch(request)
@@ -54,7 +54,7 @@ function networkFirst(request, cacheKey) {
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
 
-  // Navigate requests â†’ chá»‰ intercept '/' vÃ  '/index.html', cÃ²n láº¡i Ä‘á»ƒ browser tá»± fetch
+  // Navigate requests Ã¢â€ â€™ chÃ¡Â»â€° intercept '/' vÃƒÂ  '/index.html', cÃƒÂ²n lÃ¡ÂºÂ¡i Ã„â€˜Ã¡Â»Æ’ browser tÃ¡Â»Â± fetch
   if (event.request.mode === 'navigate') {
     const path = new URL(event.request.url).pathname;
     if (path === '/' || path === '/index.html') {
@@ -63,9 +63,9 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // API calls (Supabase, v.v.) â€” khÃ´ng cache, luÃ´n láº¥y tá»« network
+  // API calls (Supabase, v.v.) Ã¢â‚¬â€ khÃƒÂ´ng cache, luÃƒÂ´n lÃ¡ÂºÂ¥y tÃ¡Â»Â« network
   if (!isStaticAsset(event.request.url)) return;
 
-  // Static assets (html/css/js/áº£nh) â†’ network-first
+  // Static assets (html/css/js/Ã¡ÂºÂ£nh) Ã¢â€ â€™ network-first
   event.respondWith(networkFirst(event.request));
 });
