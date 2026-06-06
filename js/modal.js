@@ -6,15 +6,21 @@ let _editId = null;
 window.delReport = async function (id) {
   if (!confirm('Xóa báo cáo này?')) return;
   const record = await dbGetById(id);
-  if (record) {
-    // Record tồn tại local → xóa local + Supabase qua sbId
-    await dbDel(id);
-    if (record.sbId) await sb.del(record.sbId).catch(e => console.warn('Supabase del:', e));
-  } else {
-    // Không có local → id chính là Supabase ID
+  if (!record) {
+    // Không có local (vd đang xem lịch sử từ server) → id chính là Supabase ID
     await sb.del(id).catch(e => console.warn('Supabase del:', e));
+    toast('Đã xóa bản ghi');
+  } else if (!record.sbId) {
+    // Chưa từng lên server (đang chờ gửi) → xóa local là xong
+    await dbDel(id);
+    toast('Đã xóa bản ghi');
+  } else {
+    // Đã trên server → đánh dấu CHỜ XÓA, xóa qua hàng đợi (tự thử lại, không mất khi mạng kém)
+    await dbPut({ ...record, pendingDelete: true });
+    sendRecord(id);    // thử xóa ngay
+    requestBgSync();   // và nhờ trình duyệt xóa tiếp kể cả khi đóng app
+    toast('⏳ Đang xóa…');
   }
-  toast('Đã xóa bản ghi');
   loadToday();
   const hd = document.getElementById('hist-date').value;
   if (hd && currentTab === 'history') loadHistory(hd);
@@ -57,13 +63,11 @@ window.saveEdit = async function () {
   if (!orig) { toast('Không tìm thấy bản ghi'); return; }
 
   const updated = { ...orig, workerName: worker, team, process, quantity: qty };
+  if (orig.sbId) updated.needsUpdate = true; // cần đẩy thay đổi lên server (qua hàng đợi, có retry)
   await dbPut(updated);
-  if (orig.sbId) {
-    sb.update(orig.sbId, { worker_name: worker, team, process, quantity: qty })
-      .catch(e => console.warn('Supabase update:', e));
-  }
+  if (orig.sbId) { sendRecord(_editId); requestBgSync(); }
   closeModal();
-  toast('Đã cập nhật báo cáo');
+  toast(orig.sbId ? '⏳ Đang cập nhật…' : 'Đã cập nhật báo cáo');
   loadToday();
   const hd = document.getElementById('hist-date').value;
   if (hd && currentTab === 'history') loadHistory(hd);

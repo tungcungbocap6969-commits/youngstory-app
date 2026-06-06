@@ -1,4 +1,4 @@
-const CACHE_NAME = 'xuong-sx-v27';
+const CACHE_NAME = 'xuong-sx-v28';
 
 // Toàn bộ "vỏ" app — precache để mở tức thì VÀ đảm bảo nhận bản mới sau mỗi deploy.
 const CORE_ASSETS = [
@@ -150,26 +150,54 @@ function _sbInsert(row) {
   }).then(r => { if (!r.ok) throw new Error('insert failed'); return r.json(); }).then(rows => rows[0]);
 }
 
+function _idbDel(id) {
+  return _idb().then(db => new Promise((res, rej) => {
+    const q = db.transaction(SB_STORE, 'readwrite').objectStore(SB_STORE).delete(id);
+    q.onsuccess = () => res();
+    q.onerror   = e => rej(e.target.error);
+  }));
+}
+function _sbDel(sbId) {
+  return fetch(SB_URL + '/rest/v1/reports?id=eq.' + sbId, { method: 'DELETE', headers: _sbHeaders() })
+    .then(r => { if (!r.ok) throw new Error('del failed'); });
+}
+function _sbUpdate(sbId, data) {
+  return fetch(SB_URL + '/rest/v1/reports?id=eq.' + sbId, { method: 'PATCH', headers: _sbHeaders(), body: JSON.stringify(data) })
+    .then(r => { if (!r.ok) throw new Error('update failed'); });
+}
+
 async function swSendPending() {
-  const pending = (await _idbGetAll()).filter(r => !r.sbId);
-  if (!pending.length) return;
+  const all = await _idbGetAll();
+  const todo = all.filter(r => !r.sbId || r.pendingDelete || r.needsUpdate);
+  if (!todo.length) return;
   let anyFailed = false;
-  for (const rec of pending) {
+  for (const rec of todo) {
     try {
-      let landed = await _sbFindRecent(rec.workerName, rec.process, rec.quantity);
-      let sbId;
-      if (landed) {
-        sbId = landed.id;
-      } else {
-        const sbRow = await _sbInsert({
-          worker_name: String(rec.workerName).replace(/(?:^|\s)\S/g, c => c.toUpperCase()),
-          team: rec.team, process: rec.process, quantity: rec.quantity,
-          date: rec.date, timestamp: rec.timestamp,
+      if (rec.pendingDelete) {
+        if (rec.sbId) await _sbDel(rec.sbId);
+        await _idbDel(rec.id);
+      } else if (rec.sbId && rec.needsUpdate) {
+        await _sbUpdate(rec.sbId, {
+          worker_name: rec.workerName, team: rec.team, process: rec.process, quantity: rec.quantity,
         });
-        sbId = sbRow.id;
+        const fresh = await _idbGet(rec.id);
+        if (fresh && fresh.needsUpdate) { delete fresh.needsUpdate; await _idbPut(fresh); }
+      } else if (!rec.sbId) {
+        let landed = await _sbFindRecent(rec.workerName, rec.process, rec.quantity);
+        let sbId;
+        if (landed) {
+          sbId = landed.id;
+        } else {
+          const sbRow = await _sbInsert({
+            worker_name: String(rec.workerName).replace(/(?:^|\s)\S/g, c => c.toUpperCase()),
+            team: rec.team, process: rec.process, quantity: rec.quantity,
+            date: rec.date, timestamp: rec.timestamp,
+          });
+          sbId = sbRow.id;
+        }
+        const fresh = await _idbGet(rec.id);
+        if (fresh && !fresh.sbId && !fresh.pendingDelete) await _idbPut({ ...fresh, sbId });
       }
-      const fresh = await _idbGet(rec.id);
-      if (fresh && !fresh.sbId) await _idbPut({ ...fresh, sbId });
     } catch (_) { anyFailed = true; }
   }
   try {

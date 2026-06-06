@@ -98,6 +98,7 @@ setInterval(tickCountdowns, 1000);
 // ── Load báo cáo hôm nay ──
 async function loadToday() {
   const recs = (await dbGetByDate(mskDateStr()))
+    .filter(r => !r.pendingDelete)   // ẩn báo cáo đang chờ xóa
     .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
   const container = document.getElementById('today-cards');
@@ -141,7 +142,7 @@ async function loadHistory(dateStr) {
   } else {
     recs = await dbGetByDate(dateStr);
   }
-  recs = recs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  recs = recs.filter(r => !r.pendingDelete).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
   const container = document.getElementById('hist-cards');
   const badge     = document.getElementById('hist-badge');

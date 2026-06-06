@@ -126,17 +126,42 @@ window.unlockForm = function (name, team) {
 
 const _sending = new Set(); // chống gửi trùng cùng lúc cùng 1 record
 
+// Đồng bộ 1 record với server theo trạng thái: chờ XÓA / chờ SỬA / chờ GỬI.
+// Trả về true nếu xong (hoặc không cần làm gì), false nếu mạng lỗi (để thử lại sau).
 async function sendRecord(localId, interactive = true) {
   if (_sending.has(localId)) return false;
   _sending.add(localId);
   try {
     const rec = await dbGetById(localId);
-    if (!rec || rec.sbId) return true; // đã xác nhận hoặc đã xóa
+    if (!rec) return true;
 
-    // Idempotent: nếu server ĐÃ có (lần trước lọt nhưng mất phản hồi) → lấy lại id, KHÔNG tạo trùng.
+    // (A) Chờ XÓA — xóa trên server rồi mới bỏ local. Mạng lỗi → giữ lại, thử lại sau.
+    if (rec.pendingDelete) {
+      if (rec.sbId) { try { await sb.del(rec.sbId); } catch (_) { return false; } }
+      await dbDel(localId);
+      loadToday();
+      return true;
+    }
+
+    // (B) Chờ SỬA — đẩy thay đổi lên server. Mạng lỗi → giữ cờ, thử lại sau.
+    if (rec.sbId && rec.needsUpdate) {
+      try {
+        await sb.update(rec.sbId, {
+          worker_name: rec.workerName, team: rec.team, process: rec.process, quantity: rec.quantity,
+        });
+      } catch (_) { return false; }
+      const fresh = await dbGetById(localId);
+      if (fresh && fresh.needsUpdate) { delete fresh.needsUpdate; await dbPut(fresh); loadToday(); }
+      return true;
+    }
+
+    // (C) Đã đồng bộ, không cần làm gì.
+    if (rec.sbId) return true;
+
+    // (D) Chờ GỬI (chưa có sbId). Idempotent qua findRecent → không tạo trùng.
     let landed;
     try { landed = await sb.findRecent(rec.workerName, rec.process, rec.quantity); }
-    catch (_) { return false; } // mạng lỗi → giữ "đang chờ", thử lại sau
+    catch (_) { return false; }
 
     let sbId;
     if (landed) {
@@ -146,18 +171,14 @@ async function sendRecord(localId, interactive = true) {
       try {
         sbRow = await sb.insert({
           worker_name: rec.workerName.replace(/(?:^|\s)\S/g, c => c.toUpperCase()),
-          team:        rec.team,
-          process:     rec.process,
-          quantity:    rec.quantity,
-          date:        rec.date,
-          timestamp:   rec.timestamp,
+          team: rec.team, process: rec.process, quantity: rec.quantity, date: rec.date, timestamp: rec.timestamp,
         });
-      } catch (_) { return false; } // mạng lỗi → thử lại sau
+      } catch (_) { return false; }
       sbId = sbRow.id;
     }
 
     const fresh = await dbGetById(localId);
-    if (fresh && !fresh.sbId) {
+    if (fresh && !fresh.sbId && !fresh.pendingDelete) {
       await dbPut({ ...fresh, sbId }); // gắn sbId = ĐÃ XÁC NHẬN trên server
       if (interactive) { confetti(); toast('✓ Đã gửi báo cáo thành công! 🎉'); }
       loadToday();
@@ -168,19 +189,13 @@ async function sendRecord(localId, interactive = true) {
   }
 }
 
-// Thử gửi lại tất cả báo cáo còn "đang chờ" (định kỳ + khi có mạng lại + khi mở app)
+// Thử đồng bộ tất cả thay đổi còn treo (gửi/sửa/xóa) — định kỳ + khi có mạng lại + khi mở app.
 async function retryPending() {
   try {
-    const pending = (await dbGetAll()).filter(r => !r.sbId);
-    if (!pending.length) return;
-    let ok = 0;
-    for (const r of pending) {
-      if (await sendRecord(r.id, false)) {
-        const after = await dbGetById(r.id);
-        if (after && after.sbId) ok++;
-      }
-    }
-    if (ok > 0) { toast(`✓ Đã gửi ${ok} báo cáo còn chờ.`); loadToday(); }
+    const todo = (await dbGetAll()).filter(r => !r.sbId || r.pendingDelete || r.needsUpdate);
+    if (!todo.length) return;
+    for (const r of todo) await sendRecord(r.id, false);
+    loadToday();
   } catch (_) {}
 }
 
