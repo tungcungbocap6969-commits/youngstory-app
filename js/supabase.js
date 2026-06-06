@@ -1,6 +1,8 @@
 'use strict';
 
-const SUPABASE_URL = 'https://accjssimourrafwumltv.supabase.co';
+// Đi qua proxy riêng (api.youngstory.net) để tránh Cloudflare-của-Supabase bị Nga bóp.
+// Proxy (Caddy trên VPS Vultr Warsaw) chuyển tiếp thẳng tới accjssimourrafwumltv.supabase.co.
+const SUPABASE_URL = 'https://api.youngstory.net';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjY2pzc2ltb3VycmFmd3VtbHR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNDg0NjcsImV4cCI6MjA5MzgyNDQ2N30.Wv5UMMxGynKoU-I8I2fREf6vJET366Jf6oWpUk60ONU';
 
 function _headers(extra) {
