@@ -1,4 +1,4 @@
-const CACHE_NAME = 'xuong-sx-v26';
+const CACHE_NAME = 'xuong-sx-v27';
 
 // Toàn bộ "vỏ" app — precache để mở tức thì VÀ đảm bảo nhận bản mới sau mỗi deploy.
 const CORE_ASSETS = [
@@ -94,4 +94,91 @@ self.addEventListener('fetch', event => {
 
   // File tĩnh (html/css/js/ảnh) → cache-first.
   event.respondWith(cacheFirst(event.request));
+});
+
+// ══════════════════ BACKGROUND SYNC (cứu máy Android) ══════════════════
+// Gửi các báo cáo còn "đang chờ" lên server NGAY CẢ KHI app đã đóng.
+// Trình duyệt (Android/Chrome) tự đánh thức SW khi có mạng; còn lỗi → tự thử lại.
+const SB_URL  = 'https://api.youngstory.net';
+const SB_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjY2pzc2ltb3VycmFmd3VtbHR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNDg0NjcsImV4cCI6MjA5MzgyNDQ2N30.Wv5UMMxGynKoU-I8I2fREf6vJET366Jf6oWpUk60ONU';
+const SB_DB_NAME = 'xuong-sx';
+const SB_DB_VER  = 1;
+const SB_STORE   = 'reports';
+
+function _idb() {
+  return new Promise((res, rej) => {
+    const req = indexedDB.open(SB_DB_NAME, SB_DB_VER);
+    req.onsuccess = e => res(e.target.result);
+    req.onerror   = e => rej(e.target.error);
+  });
+}
+function _idbGetAll() {
+  return _idb().then(db => new Promise((res, rej) => {
+    const q = db.transaction(SB_STORE, 'readonly').objectStore(SB_STORE).getAll();
+    q.onsuccess = e => res(e.target.result || []);
+    q.onerror   = e => rej(e.target.error);
+  }));
+}
+function _idbGet(id) {
+  return _idb().then(db => new Promise((res, rej) => {
+    const q = db.transaction(SB_STORE, 'readonly').objectStore(SB_STORE).get(id);
+    q.onsuccess = e => res(e.target.result);
+    q.onerror   = e => rej(e.target.error);
+  }));
+}
+function _idbPut(r) {
+  return _idb().then(db => new Promise((res, rej) => {
+    const q = db.transaction(SB_STORE, 'readwrite').objectStore(SB_STORE).put(r);
+    q.onsuccess = () => res();
+    q.onerror   = e => rej(e.target.error);
+  }));
+}
+function _sbHeaders(extra) {
+  return Object.assign({ apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' }, extra || {});
+}
+function _sbFindRecent(name, process, qty) {
+  const since = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+  return fetch(SB_URL + '/rest/v1/reports?worker_name=ilike.' + encodeURIComponent(name) +
+    '&process=eq.' + encodeURIComponent(process) + '&quantity=eq.' + qty +
+    '&timestamp=gte.' + encodeURIComponent(since) + '&order=timestamp.desc&limit=1',
+    { headers: _sbHeaders() })
+    .then(r => r.ok ? r.json() : []).then(rows => (rows && rows[0]) || null);
+}
+function _sbInsert(row) {
+  return fetch(SB_URL + '/rest/v1/reports', {
+    method: 'POST', headers: _sbHeaders({ Prefer: 'return=representation' }), body: JSON.stringify(row),
+  }).then(r => { if (!r.ok) throw new Error('insert failed'); return r.json(); }).then(rows => rows[0]);
+}
+
+async function swSendPending() {
+  const pending = (await _idbGetAll()).filter(r => !r.sbId);
+  if (!pending.length) return;
+  let anyFailed = false;
+  for (const rec of pending) {
+    try {
+      let landed = await _sbFindRecent(rec.workerName, rec.process, rec.quantity);
+      let sbId;
+      if (landed) {
+        sbId = landed.id;
+      } else {
+        const sbRow = await _sbInsert({
+          worker_name: String(rec.workerName).replace(/(?:^|\s)\S/g, c => c.toUpperCase()),
+          team: rec.team, process: rec.process, quantity: rec.quantity,
+          date: rec.date, timestamp: rec.timestamp,
+        });
+        sbId = sbRow.id;
+      }
+      const fresh = await _idbGet(rec.id);
+      if (fresh && !fresh.sbId) await _idbPut({ ...fresh, sbId });
+    } catch (_) { anyFailed = true; }
+  }
+  try {
+    const cs = await self.clients.matchAll();
+    cs.forEach(c => c.postMessage({ type: 'REPORTS_SYNCED' }));
+  } catch (_) {}
+  if (anyFailed) throw new Error('still pending'); // ném lỗi → Background Sync tự thử lại sau
+}
+
+self.addEventListener('sync', event => {
+  if (event.tag === 'send-reports') event.waitUntil(swSendPending());
 });

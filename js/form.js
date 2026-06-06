@@ -188,6 +188,24 @@ setInterval(retryPending, 20000);              // mỗi 20s thử lại các bá
 window.addEventListener('online', retryPending); // khi có mạng trở lại
 setTimeout(retryPending, 3000);                // khi mở app
 
+// Background Sync: nhờ trình duyệt gửi báo cáo còn chờ NGAY CẢ KHI app đã đóng (Android/Chrome).
+// iPhone/Safari không hỗ trợ → vẫn dựa vào retry khi mở app ở trên.
+function requestBgSync() {
+  if ('serviceWorker' in navigator && 'SyncManager' in window) {
+    navigator.serviceWorker.ready
+      .then(reg => reg.sync.register('send-reports'))
+      .catch(() => {});
+  }
+}
+requestBgSync();
+
+// SW đồng bộ nền xong → làm mới danh sách nếu app đang mở
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', e => {
+    if (e.data && e.data.type === 'REPORTS_SYNCED') loadToday();
+  });
+}
+
 // C: Quantity bounce
 document.getElementById('f-qty').addEventListener('input', function () {
   this.classList.remove('qty-bounce');
@@ -256,6 +274,7 @@ btnSubmit.addEventListener('click', async () => {
     loadToday();          // hiện ngay card "đang chờ ⏳"
 
     sendRecord(localId);  // gửi ngầm: tự xác nhận ✓ hoặc tự thử lại nếu mạng chập chờn
+    requestBgSync();      // nhờ trình duyệt gửi tiếp kể cả khi app bị đóng
   } finally {
     _submitting = false;
   }
