@@ -19,17 +19,21 @@ function fmtRemaining(ms) {
 
 function renderCard(r, container, delay = 0) {
   const div        = document.createElement('div');
-  div.className    = 'rcard';
   div.dataset.id   = r.id;
   div.style.animationDelay = delay + 'ms'; // F: staggered slide-in
 
-  const editable = isEditable(r);
-  const remMs    = remainingMs(r);
+  const pending  = !r.sbId;                 // chưa có sbId = chưa xác nhận trên server → "đang chờ gửi"
+  div.className  = 'rcard' + (pending ? ' rcard-pending' : '');
+
+  const editable = !pending && isEditable(r);
+  const remMs    = pending ? 0 : remainingMs(r);
   const urgent   = remMs < 5 * 60 * 1000;
   const pct      = Math.round((remMs / EDIT_WINDOW_MS) * 100);
   const barColor = pct > 40 ? 'var(--green)' : pct > 15 ? 'var(--amber)' : 'var(--red)';
 
-  const actionsHtml = editable
+  const actionsHtml = pending
+    ? `<div class="rc-pending"><span class="rc-pending-ico">⏳</span> Đang gửi lên hệ thống…</div>`
+    : editable
     ? `<div class="rc-timer">
          <div class="rc-timer-btns">
            <button class="btn-sm" onclick="openEdit(${r.id})">Chỉnh sửa</button>

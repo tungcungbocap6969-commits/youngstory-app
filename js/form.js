@@ -119,34 +119,74 @@ window.unlockForm = function (name, team) {
   if (switchBtn) switchBtn.style.display = 'block';
 };
 
-// ── Retry sync các record chưa lên Supabase (chưa có sbId) ──
-async function retrySyncUnsynced() {
-  try {
-    const all = await dbGetAll();
-    const unsynced = all.filter(r => !r.sbId);
-    if (!unsynced.length) return;
+// ══ HÀNG ĐỢI GỬI LẠI (Hướng B) ══
+// Báo cáo được lưu LOCAL ngay khi bấm (trạng thái "đang chờ" = chưa có sbId).
+// Hàm dưới gửi lên server, CHỈ khi server xác nhận mới gắn sbId (= đã gửi thành công).
+// Mạng chập chờn → giữ "đang chờ" và tự động thử lại → công nhân chỉ bấm 1 lần.
 
-    let ok = 0;
-    for (const r of unsynced) {
+const _sending = new Set(); // chống gửi trùng cùng lúc cùng 1 record
+
+async function sendRecord(localId, interactive = true) {
+  if (_sending.has(localId)) return false;
+  _sending.add(localId);
+  try {
+    const rec = await dbGetById(localId);
+    if (!rec || rec.sbId) return true; // đã xác nhận hoặc đã xóa
+
+    // Idempotent: nếu server ĐÃ có (lần trước lọt nhưng mất phản hồi) → lấy lại id, KHÔNG tạo trùng.
+    let landed;
+    try { landed = await sb.findRecent(rec.workerName, rec.process, rec.quantity); }
+    catch (_) { return false; } // mạng lỗi → giữ "đang chờ", thử lại sau
+
+    let sbId;
+    if (landed) {
+      sbId = landed.id;
+    } else {
+      let sbRow;
       try {
-        const sbRow = await sb.insert({
-          worker_name: r.workerName,
-          team:        r.team,
-          process:     r.process,
-          quantity:    r.quantity,
-          date:        r.date,
-          timestamp:   r.timestamp,
+        sbRow = await sb.insert({
+          worker_name: rec.workerName.replace(/(?:^|\s)\S/g, c => c.toUpperCase()),
+          team:        rec.team,
+          process:     rec.process,
+          quantity:    rec.quantity,
+          date:        rec.date,
+          timestamp:   rec.timestamp,
         });
-        await dbPut({ ...r, sbId: sbRow.id });
-        ok++;
-      } catch (_) { /* thử lại lần sau */ }
+      } catch (_) { return false; } // mạng lỗi → thử lại sau
+      sbId = sbRow.id;
     }
-    if (ok > 0) toast(`Đã đồng bộ ${ok} báo cáo còn tồn đọng lên server.`);
+
+    const fresh = await dbGetById(localId);
+    if (fresh && !fresh.sbId) {
+      await dbPut({ ...fresh, sbId }); // gắn sbId = ĐÃ XÁC NHẬN trên server
+      if (interactive) { confetti(); toast('✓ Đã gửi báo cáo thành công! 🎉'); }
+      loadToday();
+    }
+    return true;
+  } finally {
+    _sending.delete(localId);
+  }
+}
+
+// Thử gửi lại tất cả báo cáo còn "đang chờ" (định kỳ + khi có mạng lại + khi mở app)
+async function retryPending() {
+  try {
+    const pending = (await dbGetAll()).filter(r => !r.sbId);
+    if (!pending.length) return;
+    let ok = 0;
+    for (const r of pending) {
+      if (await sendRecord(r.id, false)) {
+        const after = await dbGetById(r.id);
+        if (after && after.sbId) ok++;
+      }
+    }
+    if (ok > 0) { toast(`✓ Đã gửi ${ok} báo cáo còn chờ.`); loadToday(); }
   } catch (_) {}
 }
 
-// Retry khi mở trang (sau 3 giây để tránh tranh chấp với load ban đầu)
-setTimeout(retrySyncUnsynced, 3000);
+setInterval(retryPending, 20000);              // mỗi 20s thử lại các báo cáo còn chờ
+window.addEventListener('online', retryPending); // khi có mạng trở lại
+setTimeout(retryPending, 3000);                // khi mở app
 
 // C: Quantity bounce
 document.getElementById('f-qty').addEventListener('input', function () {
@@ -155,119 +195,68 @@ document.getElementById('f-qty').addEventListener('input', function () {
   this.classList.add('qty-bounce');
 });
 
-// ── Submit ──
+// ── Submit (Hướng B): lưu local NGAY rồi gửi ngầm, ấn 1 lần là xong ──
 let _submitting = false;
 btnSubmit.addEventListener('click', async () => {
   if (_submitting) return;
   _submitting = true;
-  const worker  = nameInput.value.trim();
-  const team    = teamDD.get();
-  const process = mainDD.get().replace(/^\d+\.\s*/, ''); // bỏ "1. " trước khi lưu
-  const qty     = parseInt(document.getElementById('f-qty').value, 10);
-
-  if (!worker)        { toast('Vui lòng nhập họ tên'); return; }
-  if (!team)          { toast('Vui lòng chọn tổ sản xuất'); return; }
-  if (!process)       { toast('Vui lòng chọn công đoạn'); return; }
-  if (team === 'Đóng gói' && !_selectedCity) { toast('Vui lòng chọn thành phố'); return; }
-  if (!qty || qty < 1) { toast('Vui lòng nhập sản lượng hợp lệ'); return; }
-
-  const fullProcess = team === 'Đóng gói' ? `${process} · ${_selectedCity}` : process;
-
-  localStorage.setItem('workerName', worker);
-
-  const record = {
-    workerName: worker,
-    team,
-    process: fullProcess,
-    quantity: qty,
-    date:      mskDateStr(),
-    timestamp: new Date().toISOString(),
-  };
-
-  // D: Ripple effect
-  const ripple  = document.createElement('span');
-  ripple.className = 'ripple';
-  const btnRect = btnSubmit.getBoundingClientRect();
-  const size    = Math.max(btnRect.width, btnRect.height);
-  ripple.style.cssText =
-    `width:${size}px;height:${size}px;` +
-    `left:${btnRect.width / 2 - size / 2}px;` +
-    `top:${btnRect.height / 2 - size / 2}px`;
-  btnSubmit.appendChild(ripple);
-  setTimeout(() => ripple.remove(), 600);
-
-  const submitErrorEl = document.getElementById('submit-error');
-  submitErrorEl.classList.add('hidden');
-  btnSubmit.classList.remove('error');
-  btnSubmit.disabled = true;
-
   try {
-    // Kiểm tra trùng lặp trước khi gửi
-    const existing = await sb.findRecent(worker, fullProcess, qty);
-    if (existing) {
+    const worker  = nameInput.value.trim();
+    const team    = teamDD.get();
+    const process = mainDD.get().replace(/^\d+\.\s*/, ''); // bỏ "1. " trước khi lưu
+    const qty     = parseInt(document.getElementById('f-qty').value, 10);
+
+    if (!worker)        { toast('Vui lòng nhập họ tên'); return; }
+    if (!team)          { toast('Vui lòng chọn tổ sản xuất'); return; }
+    if (!process)       { toast('Vui lòng chọn công đoạn'); return; }
+    if (team === 'Đóng gói' && !_selectedCity) { toast('Vui lòng chọn thành phố'); return; }
+    if (!qty || qty < 1) { toast('Vui lòng nhập sản lượng hợp lệ'); return; }
+
+    const fullProcess = team === 'Đóng gói' ? `${process} · ${_selectedCity}` : process;
+    localStorage.setItem('workerName', worker);
+
+    // Chống trùng NGAY trên máy (cùng tên+công đoạn+sản lượng trong 2 giờ) — phản hồi tức thì, không cần mạng.
+    const now = Date.now();
+    const dup = (await dbGetByDate(mskDateStr())).find(r =>
+      r.workerName === worker && r.process === fullProcess && r.quantity === qty &&
+      (now - (r.createdAt || new Date(r.timestamp).getTime())) < 2 * 60 * 60 * 1000);
+    if (dup) {
       if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
-      btnSubmit.classList.add('error');
-      void btnSubmit.offsetWidth;
-      btnSubmit.classList.add('shake');
-      btnSubmit.addEventListener('animationend', () => btnSubmit.classList.remove('shake'), { once: true });
-      submitErrorEl.textContent = '⚠ Bạn đã báo cáo công đoạn này hôm nay rồi.';
-      submitErrorEl.classList.remove('hidden');
-      setTimeout(() => {
-        btnSubmit.classList.remove('error');
-        submitErrorEl.classList.add('hidden');
-      }, 4000);
+      toast(dup.sbId ? '⚠ Bạn đã báo cáo công đoạn này rồi.' : '⏳ Báo cáo này đang chờ gửi, không cần bấm lại.');
       return;
     }
 
-    // Gửi Supabase trước — nếu mất mạng sẽ throw ở đây
-    const sbRow = await sb.insert({
-      worker_name: record.workerName.replace(/(?:^|\s)\S/g, c => c.toUpperCase()),
-      team:        record.team,
-      process:     record.process,
-      quantity:    record.quantity,
-      date:        record.date,
-      timestamp:   record.timestamp,
+    // D: Ripple effect
+    const ripple  = document.createElement('span');
+    ripple.className = 'ripple';
+    const btnRect = btnSubmit.getBoundingClientRect();
+    const size    = Math.max(btnRect.width, btnRect.height);
+    ripple.style.cssText =
+      `width:${size}px;height:${size}px;` +
+      `left:${btnRect.width / 2 - size / 2}px;` +
+      `top:${btnRect.height / 2 - size / 2}px`;
+    btnSubmit.appendChild(ripple);
+    setTimeout(() => ripple.remove(), 600);
+
+    // LƯU LOCAL NGAY (vào hàng đợi, chưa có sbId = "đang chờ gửi") → bấm 1 lần là xong, không chờ mạng.
+    const localId = await dbAdd({
+      workerName: worker,
+      team,
+      process:   fullProcess,
+      quantity:  qty,
+      date:      mskDateStr(),
+      timestamp: new Date().toISOString(),
+      createdAt: now,
     });
 
-    // Supabase thành công → lưu local kèm sbId
-    const localId = await dbAdd({ ...record, sbId: sbRow.id });
-
-    confetti(); // E
-    toast('Đã gửi báo cáo thành công! 🎉');
+    if (navigator.vibrate) navigator.vibrate(30);
+    toast('⏳ Đã ghi nhận, đang gửi lên hệ thống…');
     mainDD.clear();
     document.getElementById('f-qty').value = '';
-    loadToday();
-  } catch (e) {
-    console.error(e);
+    loadToday();          // hiện ngay card "đang chờ ⏳"
 
-    // Có thể server ĐÃ nhận báo cáo nhưng phản hồi bị mất do mạng chập chờn.
-    // Hỏi lại server: nếu báo cáo thực sự đã lên → coi như thành công (lưu local + báo thành công).
-    try {
-      const landed = await sb.findRecent(worker, fullProcess, qty);
-      if (landed) {
-        await dbAdd({ ...record, sbId: landed.id });
-        confetti();
-        toast('Đã gửi báo cáo thành công! 🎉');
-        mainDD.clear();
-        document.getElementById('f-qty').value = '';
-        loadToday();
-        return; // thực sự đã thành công → không hiện lỗi
-      }
-    } catch (_) { /* không xác minh được → rơi xuống báo lỗi mạng bên dưới */ }
-
-    if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
-    btnSubmit.classList.add('error');
-    void btnSubmit.offsetWidth; // reset animation
-    btnSubmit.classList.add('shake');
-    btnSubmit.addEventListener('animationend', () => btnSubmit.classList.remove('shake'), { once: true });
-    submitErrorEl.textContent = '⚠ Không có kết nối mạng. Vui lòng thử lại.';
-    submitErrorEl.classList.remove('hidden');
-    setTimeout(() => {
-      btnSubmit.classList.remove('error');
-      submitErrorEl.classList.add('hidden');
-    }, 4000);
+    sendRecord(localId);  // gửi ngầm: tự xác nhận ✓ hoặc tự thử lại nếu mạng chập chờn
   } finally {
-    btnSubmit.disabled = false;
     _submitting = false;
   }
 });
